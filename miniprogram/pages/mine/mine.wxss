@@ -1,0 +1,43 @@
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+}
+
+.avatar {
+  width: 92rpx;
+  height: 92rpx;
+  line-height: 92rpx;
+  background: #176b5b;
+  color: #ffffff;
+  border-radius: 50%;
+  text-align: center;
+  font-size: 38rpx;
+  font-weight: 700;
+}
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 18rpx;
+  margin-top: 20rpx;
+}
+
+.stat {
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 48rpx;
+  font-weight: 700;
+}
+
+.menu-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.menu-grid button {
+  margin: 0;
+}

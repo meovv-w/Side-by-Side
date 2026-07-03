@@ -1,0 +1,10 @@
+.code {
+  margin-top: 20rpx;
+  padding: 22rpx;
+  background: #17211f;
+  color: #ffffff;
+  border-radius: 10rpx;
+  font-size: 36rpx;
+  letter-spacing: 2rpx;
+  text-align: center;
+}

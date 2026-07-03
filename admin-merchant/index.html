@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>同路行 商家后台</title>
+  <style>
+    body { margin: 0; background: #f5f7f6; color: #17211f; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    header { padding: 24px 32px; background: #176b5b; color: #fff; }
+    main { max-width: 1180px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0; font-size: 26px; }
+    h2 { margin: 28px 0 14px; font-size: 20px; }
+    .sub { margin-top: 8px; color: rgba(255,255,255,.78); }
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
+    .card { background: #fff; border: 1px solid #e5ece9; border-radius: 8px; padding: 18px; box-shadow: 0 4px 16px rgba(23,107,91,.06); }
+    .num { font-size: 30px; font-weight: 800; color: #176b5b; }
+    .muted { color: #66736f; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5ece9; border-radius: 8px; overflow: hidden; }
+    th, td { padding: 12px; border-bottom: 1px solid #e5ece9; text-align: left; font-size: 14px; }
+    th { background: #eef5f2; color: #34423e; }
+    .tag { display: inline-block; padding: 4px 9px; border-radius: 999px; background: #e8f3ef; color: #176b5b; font-size: 12px; }
+    .danger { background: #fff1ea; color: #ba4a1c; }
+    .form { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px; }
+    input, button { height: 40px; border-radius: 8px; border: 1px solid #dce6e2; padding: 0 12px; box-sizing: border-box; }
+    button { background: #176b5b; color: #fff; border: 0; cursor: pointer; }
+    @media (max-width: 760px) { .grid, .form { grid-template-columns: 1fr; } main { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>同路行 · 商家后台</h1>
+    <div class="sub">覆盖 HR 要求：登录、店铺信息、商品管理、订单、核销、结算、拉新券、推广码、修车/救援。</div>
+  </header>
+  <main>
+    <section class="grid">
+      <div class="card"><div class="num">18</div><div class="muted">累计核销</div></div>
+      <div class="card"><div class="num">¥1256.8</div><div class="muted">待/已结算金额</div></div>
+      <div class="card"><div class="num">A</div><div class="muted">商家考核等级</div></div>
+      <div class="card"><div class="num">TD-M001</div><div class="muted">专属推广码</div></div>
+    </section>
+
+    <h2>店铺信息 / 入驻资料</h2>
+    <div class="card">
+      <div><strong>湖畔咖啡站</strong> <span class="tag">审核通过</span></div>
+      <p class="muted">电话 0571-88880001 · 地址 千岛湖服务区北区 · 营业时间 08:00-22:00 · 已绑定银行卡 **** 3188</p>
+    </div>
+
+    <h2>发布拼团商品</h2>
+    <div class="card form">
+      <input value="千岛湖服务区咖啡双人券" aria-label="商品名称">
+      <input value="48" aria-label="原价">
+      <input value="1人48 / 3人39.9 / 10人29.9" aria-label="阶梯价格">
+      <button onclick="alert('Mock：商品已保存，用户端拼团列表可展示')">保存商品</button>
+    </div>
+
+    <h2>订单管理 / 核销</h2>
+    <table>
+      <thead><tr><th>订单</th><th>用户</th><th>商品</th><th>金额</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>order_1001</td><td>林小路</td><td>咖啡双人券</td><td>¥29.9</td><td><span class="tag">待核销</span></td><td><button onclick="alert('核销成功，触发分账')">输入核销码</button></td></tr>
+        <tr><td>order_1000</td><td>小北</td><td>补给零食包</td><td>¥19.9</td><td><span class="tag">已核销</span></td><td>查看记录</td></tr>
+      </tbody>
+    </table>
+
+    <h2>拉新券 / 推广码 / 修车救援</h2>
+    <section class="grid">
+      <div class="card"><strong>拉新券</strong><p class="muted">面额 ¥8，用户扫码注册后自动入券包。</p></div>
+      <div class="card"><strong>推广码</strong><p class="muted">TD-M001 · 拉新 26 人 · 成交 9 单。</p></div>
+      <div class="card"><strong>修车/救援</strong><p class="muted">服务半径 30km · 电话 0571-88881234 · 营业中。</p></div>
+      <div class="card"><strong>消息通知</strong><p class="muted">新订单、核销、结算、等级变更均有站内通知。</p></div>
+    </section>
+  </main>
+</body>
+</html>

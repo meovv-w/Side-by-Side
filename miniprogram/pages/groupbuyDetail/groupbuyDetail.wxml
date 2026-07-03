@@ -1,0 +1,17 @@
+<view class="page" wx:if="{{item}}">
+  <view class="card">
+    <view class="title">{{item.title}}</view>
+    <view class="muted">{{item.merchantName}}</view>
+    <view class="price-row">
+      <text class="price">¥{{item.price}}</text>
+      <text class="origin">¥{{item.originPrice}}</text>
+    </view>
+    <view class="muted">{{item.joined}}/{{item.minPeople}} 人 · 还差 {{item.remain}} 人 · 截止 {{item.validUntil}}</view>
+    <view class="progress">
+      <view class="progress-inner" style="width: {{item.progress}}%;"></view>
+    </view>
+    <view class="desc">{{item.description}}</view>
+  </view>
+  <button class="primary-btn" bindtap="pay">模拟支付</button>
+</view>
+<view wx:else class="empty">加载中</view>

@@ -1,0 +1,86 @@
+<view class="page">
+  <view class="hero">
+    <view>
+      <view class="eyebrow">地图首页 · 青318小队 Day3</view>
+      <view class="hero-title">同路行</view>
+      <view class="hero-subtitle">队友位置、路线、拼团、路况、地点聊天室集中展示。</view>
+    </view>
+    <button class="ghost-btn compact" bindtap="resetDemo">重置</button>
+  </view>
+
+  <view class="map-status">
+    <view>💬 {{stats.unreadCount || 0}}</view>
+    <view>🏔️ 3200m</view>
+    <view>🌤️ 22°C</view>
+  </view>
+
+  <view class="quick-actions">
+    <button class="primary-btn action-btn" bindtap="goTrips">设行程</button>
+    <button class="secondary-btn action-btn" bindtap="goMessages">消息</button>
+    <button class="secondary-btn action-btn" bindtap="goGroupbuys">看拼团</button>
+    <button class="danger-btn action-btn" bindtap="sos">SOS</button>
+  </view>
+
+  <view class="stats">
+    <view class="stat-box">
+      <view class="stat-num">{{stats.tripCount}}</view>
+      <view class="muted">开放行程</view>
+    </view>
+    <view class="stat-box">
+      <view class="stat-num">{{stats.joinedTripCount}}</view>
+      <view class="muted">已参与</view>
+    </view>
+    <view class="stat-box">
+      <view class="stat-num">{{stats.orderCount}}</view>
+      <view class="muted">核销订单</view>
+    </view>
+  </view>
+
+  <map class="map" latitude="30.2741" longitude="120.1551" scale="8" markers="{{markers}}" polyline="{{polyline}}"></map>
+
+  <view class="section-title">地图图层</view>
+  <view class="layer-switches">
+    <view class="layer-switch {{activeLayers.teammate ? 'on' : ''}}" data-key="teammate" bindtap="toggleLayer">队友</view>
+    <view class="layer-switch {{activeLayers.groupbuy ? 'on' : ''}}" data-key="groupbuy" bindtap="toggleLayer">拼团</view>
+    <view class="layer-switch {{activeLayers.poi ? 'on' : ''}}" data-key="poi" bindtap="toggleLayer">POI</view>
+    <view class="layer-switch {{activeLayers.safe ? 'on' : ''}}" data-key="safe" bindtap="toggleLayer">安全</view>
+    <view class="layer-switch {{activeLayers.traffic ? 'on' : ''}}" data-key="traffic" bindtap="toggleLayer">路况</view>
+    <view class="layer-switch {{activeLayers.poiChat ? 'on' : ''}}" data-key="poiChat" bindtap="toggleLayer">聊天</view>
+  </view>
+  <view class="layer-grid">
+    <view wx:for="{{mapLayers}}" wx:key="_id" class="layer-item" bindtap="openLayer" data-id="{{item._id}}">
+      <view class="card-title">{{item.title}}</view>
+      <view class="muted">{{item.type}} · {{item.desc}}</view>
+    </view>
+  </view>
+
+  <view class="section-title">地点聊天室</view>
+  <view wx:for="{{poiChats}}" wx:key="_id" class="card" bindtap="openPoiChat" data-id="{{item._id}}">
+    <view class="row">
+      <view class="card-title">💬 {{item.name}}</view>
+      <text class="tag">{{item.online}} 在线</text>
+    </view>
+    <view class="muted">{{item.location}} · {{item.lastMessage}}</view>
+  </view>
+
+  <view class="section-title">附近行程</view>
+  <view wx:for="{{trips}}" wx:key="_id" class="card" bindtap="openTrip" data-id="{{item._id}}">
+    <view class="row">
+      <view class="card-title">{{item.title}}</view>
+      <text class="tag">{{item.statusText}}</text>
+    </view>
+    <view class="route-line">{{item.from}} -> {{item.to}}</view>
+    <view class="muted">{{item.departAt}} · {{item.seatJoined}}/{{item.seatTotal}} 人 · 人均 ¥{{item.priceShare}}</view>
+  </view>
+
+  <view class="section-title">路上拼团</view>
+  <view wx:for="{{groupbuys}}" wx:key="_id" class="card" bindtap="openGroupbuy" data-id="{{item._id}}">
+    <view class="row">
+      <view class="card-title">{{item.title}}</view>
+      <text class="price">¥{{item.price}}</text>
+    </view>
+    <view class="muted">{{item.merchantName}} · {{item.joined}}/{{item.minPeople}} 人成团</view>
+  </view>
+
+  <button class="secondary-btn" bindtap="goSupport">联系客服 / 投诉</button>
+</view>

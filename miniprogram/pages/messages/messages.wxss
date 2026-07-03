@@ -1,0 +1,10 @@
+.badge {
+  min-width: 36rpx;
+  height: 36rpx;
+  line-height: 36rpx;
+  border-radius: 999rpx;
+  background: #ef4444;
+  color: #fff;
+  font-size: 22rpx;
+  text-align: center;
+}

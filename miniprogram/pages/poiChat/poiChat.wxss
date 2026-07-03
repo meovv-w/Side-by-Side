@@ -1,0 +1,41 @@
+.chat-page {
+  padding-bottom: 130rpx;
+}
+
+.room-card {
+  margin-bottom: 18rpx;
+}
+
+.messages {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.message {
+  padding: 20rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5ece9;
+  border-radius: 12rpx;
+}
+
+.composer {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1fr 160rpx;
+  gap: 14rpx;
+  padding: 18rpx 24rpx;
+  background: #f5f7f6;
+  border-top: 1rpx solid #dce6e2;
+}
+
+.composer-input {
+  margin: 0;
+}
+
+.send-btn {
+  margin: 0;
+}

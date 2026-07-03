@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>同路行 运营后台</title>
+  <style>
+    body { margin: 0; background: #f5f7f6; color: #17211f; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+    header { padding: 24px 32px; background: #17211f; color: #fff; }
+    main { max-width: 1220px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0; font-size: 26px; }
+    h2 { margin: 28px 0 14px; font-size: 20px; }
+    .sub { margin-top: 8px; color: rgba(255,255,255,.72); }
+    .grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px; }
+    .card { background: #fff; border: 1px solid #e5ece9; border-radius: 8px; padding: 18px; box-shadow: 0 4px 16px rgba(23,107,91,.06); }
+    .num { font-size: 28px; font-weight: 800; color: #176b5b; }
+    .muted { color: #66736f; font-size: 13px; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5ece9; border-radius: 8px; overflow: hidden; margin-bottom: 22px; }
+    th, td { padding: 12px; border-bottom: 1px solid #e5ece9; text-align: left; font-size: 14px; }
+    th { background: #eef5f2; color: #34423e; }
+    .tag { display: inline-block; padding: 4px 9px; border-radius: 999px; background: #e8f3ef; color: #176b5b; font-size: 12px; }
+    .warn { background: #fff7df; color: #a15c00; }
+    button { height: 34px; border: 0; border-radius: 8px; padding: 0 12px; background: #176b5b; color: #fff; cursor: pointer; }
+    @media (max-width: 860px) { .grid { grid-template-columns: 1fr 1fr; } main { padding: 14px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>同路行 · 运营后台</h1>
+    <div class="sub">覆盖 HR 要求：数据看板、用户/商家审核、订单、退款、结算、商家考核、券、邀请、等级、聊天室、客服。</div>
+  </header>
+  <main>
+    <section class="grid">
+      <div class="card"><div class="num">2</div><div class="muted">注册用户</div></div>
+      <div class="card"><div class="num">2</div><div class="muted">商家数</div></div>
+      <div class="card"><div class="num">2</div><div class="muted">拼团活动</div></div>
+      <div class="card"><div class="num">25</div><div class="muted">核销数</div></div>
+      <div class="card"><div class="num">¥1685.3</div><div class="muted">GMV/结算</div></div>
+    </section>
+
+    <h2>用户审核 / 车主认证</h2>
+    <table>
+      <thead><tr><th>用户</th><th>手机号</th><th>车牌</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>林小路</td><td>13800000001</td><td>浙A8T520</td><td><span class="tag">已通过</span></td><td>查看</td></tr>
+        <tr><td>小北</td><td>13800000003</td><td>浙B2K991</td><td><span class="tag warn">待审核</span></td><td><button onclick="alert('Mock：已通过车主认证')">通过</button></td></tr>
+      </tbody>
+    </table>
+
+    <h2>商家审核 / 考核 / 结算</h2>
+    <table>
+      <thead><tr><th>商家</th><th>资质</th><th>等级</th><th>得分</th><th>结算</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>湖畔咖啡站</td><td>已审核</td><td>A</td><td>92</td><td>¥1256.8</td><td><button onclick="alert('Mock：已触发结算')">触发结算</button></td></tr>
+        <tr><td>同路补给铺</td><td>待审核</td><td>B</td><td>78</td><td>¥428.5</td><td><button onclick="alert('Mock：商家审核通过')">审核</button></td></tr>
+      </tbody>
+    </table>
+
+    <h2>订单 / 退款 / 券 / 邀请</h2>
+    <section class="grid">
+      <div class="card"><strong>订单管理</strong><p class="muted">全平台订单列表、状态筛选、详情查看。</p></div>
+      <div class="card"><strong>退款审核</strong><p class="muted">1 条待审核：行程取消，金额 ¥29.9。</p></div>
+      <div class="card"><strong>券管理</strong><p class="muted">平台券预算、商家券发放和核销数据。</p></div>
+      <div class="card"><strong>邀请管理</strong><p class="muted">邀请人数、注册数、排行榜、奖励发放。</p></div>
+      <div class="card"><strong>等级规则</strong><p class="muted">完成行程 +10，拼团 +20，邀请 +10。</p></div>
+    </section>
+
+    <h2>地点聊天室 / 客服 / 投诉</h2>
+    <table>
+      <thead><tr><th>模块</th><th>记录</th><th>状态</th><th>操作</th></tr></thead>
+      <tbody>
+        <tr><td>地点聊天室</td><td>千岛湖服务区补给讨论</td><td><span class="tag">活跃</span></td><td><button onclick="alert('Mock：话题已下架')">下架</button></td></tr>
+        <tr><td>客服工单</td><td>核销码无法识别</td><td><span class="tag warn">待处理</span></td><td><button onclick="alert('Mock：已回复用户')">回复</button></td></tr>
+        <tr><td>隐私投诉</td><td>跨车队私信骚扰</td><td><span class="tag warn">待处理</span></td><td><button onclick="alert('Mock：已限制私信')">处理</button></td></tr>
+      </tbody>
+    </table>
+  </main>
+</body>
+</html>

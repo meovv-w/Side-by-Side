@@ -1,0 +1,18 @@
+.price {
+  color: #ba4a1c;
+  font-weight: 700;
+}
+
+.progress {
+  height: 12rpx;
+  margin-top: 18rpx;
+  overflow: hidden;
+  background: #edf2f0;
+  border-radius: 999rpx;
+}
+
+.progress-inner {
+  height: 100%;
+  background: #176b5b;
+  border-radius: 999rpx;
+}

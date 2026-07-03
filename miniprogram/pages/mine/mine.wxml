@@ -1,0 +1,66 @@
+<view class="page">
+  <view class="card profile">
+    <view class="avatar">{{avatarText}}</view>
+    <view>
+      <view class="title">{{user.nickname || '未登录'}}</view>
+      <view class="muted">Lv.{{user.level || 1}} · 同路值 {{user.growth || 0}} · 信用 {{user.creditScore || '-'}}</view>
+      <view class="muted">认证 {{user.ownerCertStatus || 'none'}} · {{user.vehicleModel || '未填车型'}}</view>
+    </view>
+  </view>
+
+  <button class="secondary-btn" bindtap="login">Mock 登录</button>
+
+  <view class="stats">
+    <view class="card stat">
+      <view class="stat-num">{{trips.length}}</view>
+      <view class="muted">参与行程</view>
+    </view>
+    <view class="card stat">
+      <view class="stat-num">{{orders.length}}</view>
+      <view class="muted">订单</view>
+    </view>
+    <view class="card stat">
+      <view class="stat-num">{{coupons.length}}</view>
+      <view class="muted">券包</view>
+    </view>
+  </view>
+
+  <view class="section-title">HR 功能入口</view>
+  <view class="menu-grid">
+    <button class="secondary-btn" bindtap="nav" data-url="/pages/certify/certify">车主认证</button>
+    <button class="secondary-btn" bindtap="nav" data-url="/pages/invite/invite">邀请好友</button>
+    <button class="secondary-btn" bindtap="nav" data-url="/pages/coupons/coupons">我的券包</button>
+    <button class="secondary-btn" bindtap="nav" data-url="/pages/nextTrip/nextTrip">下一趟</button>
+    <button class="secondary-btn" bindtap="nav" data-url="/pages/orders/orders">我的订单</button>
+    <button class="secondary-btn" bindtap="nav" data-url="/pages/support/support">客服中心</button>
+  </view>
+
+  <view class="section-title">同路值流水</view>
+  <view wx:for="{{growthLogs}}" wx:key="_id" class="card">
+    <view class="row">
+      <view class="card-title">{{item.reason}}</view>
+      <text class="tag">+{{item.delta}}</text>
+    </view>
+    <view class="muted">{{item.createdAt}}</view>
+  </view>
+
+  <view class="section-title">我的行程</view>
+  <view wx:if="{{trips.length === 0}}" class="empty">还没有加入行程</view>
+  <view wx:for="{{trips}}" wx:key="_id" class="card" bindtap="openTrip" data-id="{{item._id}}">
+    <view class="card-title">{{item.title}}</view>
+    <view class="muted">{{item.from}} -> {{item.to}}</view>
+  </view>
+
+  <view class="section-title">我的订单</view>
+  <view wx:if="{{orders.length === 0}}" class="empty">还没有拼团订单</view>
+  <view wx:for="{{orders}}" wx:key="_id" class="card">
+    <view class="card-title">{{item.title}}</view>
+    <view class="muted">核销码 {{item.verifyCode}}</view>
+  </view>
+
+  <view class="section-title">下一趟草稿</view>
+  <view wx:for="{{nextTrips}}" wx:key="_id" class="card">
+    <view class="card-title">{{item.from}} -> {{item.to}}</view>
+    <view class="muted">{{item.departAt}} · {{item.status}}</view>
+  </view>
+</view>

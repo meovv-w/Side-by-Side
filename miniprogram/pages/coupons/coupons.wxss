@@ -1,0 +1,10 @@
+.coupon {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.coupon-amount {
+  color: #ba4a1c;
+  font-size: 48rpx;
+  font-weight: 800;
+}

@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="card invite-card">
+    <view class="muted">我的专属推广码</view>
+    <view class="invite-code">{{inviteCode}}</view>
+    <view class="muted">{{qrcode}}</view>
+  </view>
+  <button class="primary-btn" bindtap="share">生成邀请链接/二维码</button>
+
+  <view class="section-title">邀请记录</view>
+  <view wx:for="{{records}}" wx:key="_id" class="card">
+    <view class="row">
+      <view class="card-title">{{item.inviteeName}}</view>
+      <text class="tag">+{{item.bonus}} 同路值</text>
+    </view>
+    <view class="muted">{{item.source}} · {{item.status}}</view>
+  </view>
+</view>

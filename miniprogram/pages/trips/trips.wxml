@@ -1,0 +1,19 @@
+<view class="page">
+  <button class="primary-btn" bindtap="publish">发布行程</button>
+
+  <view class="filter-bar">
+    <view wx:for="{{filters}}" wx:key="key" class="filter {{currentFilter === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeFilter">{{item.label}}</view>
+  </view>
+
+  <view class="section-title">全部行程</view>
+  <view wx:if="{{trips.length === 0}}" class="empty">暂无行程</view>
+  <view wx:for="{{trips}}" wx:key="_id" class="card" bindtap="openTrip" data-id="{{item._id}}">
+    <view class="row">
+      <view class="card-title">{{item.title}}</view>
+      <text class="tag">{{item.statusText}}</text>
+    </view>
+    <view>{{item.from}} -> {{item.to}}</view>
+    <view class="muted">{{item.departAt}}</view>
+    <view class="muted">车主 {{item.ownerName}} · {{item.seatJoined}}/{{item.seatTotal}} 人 · 人均 ¥{{item.priceShare}}</view>
+  </view>
+</view>

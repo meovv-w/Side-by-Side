@@ -1,0 +1,12 @@
+<view class="page">
+  <view class="card">
+    <view class="card-title">认证状态</view>
+    <view class="status-line">{{cert.status || 'none'}}</view>
+    <view class="muted">MVP 使用模拟行驶证上传，运营后台可审核待处理记录。</view>
+  </view>
+
+  <input class="input" placeholder="行驶证姓名" value="{{form.name}}" data-key="name" bindinput="input" />
+  <input class="input" placeholder="车牌号" value="{{form.plate}}" data-key="plate" bindinput="input" />
+  <view class="mock-upload">行驶证照片：mock-upload-license.jpg</view>
+  <button class="primary-btn" bindtap="submit">提交车主认证</button>
+</view>

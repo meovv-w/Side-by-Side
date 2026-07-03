@@ -1,0 +1,138 @@
+.hero {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20rpx;
+  padding: 34rpx 30rpx;
+  background: #176b5b;
+  color: #ffffff;
+  border-radius: 16rpx;
+}
+
+.eyebrow {
+  margin-bottom: 10rpx;
+  color: rgba(255, 255, 255, 0.76);
+  font-size: 22rpx;
+}
+
+.hero-title {
+  font-size: 48rpx;
+  font-weight: 800;
+}
+
+.hero-subtitle {
+  max-width: 470rpx;
+  margin-top: 10rpx;
+  color: rgba(255, 255, 255, 0.84);
+  font-size: 25rpx;
+  line-height: 1.5;
+}
+
+.quick-actions,
+.stats {
+  display: grid;
+  gap: 16rpx;
+}
+
+.quick-actions {
+  grid-template-columns: 1fr 1fr;
+  margin-bottom: 18rpx;
+}
+
+.action-btn {
+  margin: 0;
+}
+
+.stats {
+  grid-template-columns: repeat(3, 1fr);
+  margin-bottom: 20rpx;
+}
+
+.stat-box {
+  padding: 18rpx 10rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5ece9;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.stat-num {
+  font-size: 38rpx;
+  font-weight: 800;
+  color: #17211f;
+}
+
+.ghost-btn {
+  height: 70rpx;
+  line-height: 70rpx;
+  border-radius: 12rpx;
+  background: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+  font-size: 26rpx;
+}
+
+.compact {
+  width: 150rpx;
+}
+
+.map {
+  width: 100%;
+  height: 360rpx;
+  border-radius: 12rpx;
+  overflow: hidden;
+}
+
+.map-status {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.map-status view,
+.layer-item {
+  padding: 18rpx;
+  background: #ffffff;
+  border: 1rpx solid #e5ece9;
+  border-radius: 12rpx;
+  text-align: center;
+}
+
+.layer-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16rpx;
+}
+
+.layer-item {
+  text-align: left;
+}
+
+.layer-switches {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+}
+
+.layer-switch {
+  height: 64rpx;
+  line-height: 64rpx;
+  border: 1rpx solid #dce6e2;
+  border-radius: 12rpx;
+  background: #ffffff;
+  color: #66736f;
+  text-align: center;
+  font-size: 25rpx;
+}
+
+.layer-switch.on {
+  border-color: #176b5b;
+  background: #176b5b;
+  color: #ffffff;
+}
+
+.route-line {
+  margin: 12rpx 0 6rpx;
+  color: #34423e;
+}

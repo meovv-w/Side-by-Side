@@ -1,0 +1,25 @@
+<view class="page" wx:if="{{trip}}">
+  <view class="card">
+    <view class="row">
+      <view class="title">{{trip.title}}</view>
+      <text class="tag">{{trip.statusText}}</text>
+    </view>
+    <view class="route">{{trip.from}} -> {{trip.to}}</view>
+    <view class="muted">{{trip.departAt}}</view>
+    <view class="muted">车主 {{trip.ownerName}} · {{trip.seatJoined}}/{{trip.seatTotal}} 人 · ¥{{trip.priceShare}}</view>
+    <view class="note">{{trip.note}}</view>
+  </view>
+
+  <map class="map" latitude="{{center.latitude}}" longitude="{{center.longitude}}" scale="8" markers="{{markers}}" polyline="{{polyline}}"></map>
+
+  <view class="section-title">成员</view>
+  <view wx:for="{{members}}" wx:key="_id" class="card member">
+    <text>{{item.nickname}}</text>
+    <text class="tag">{{item.role}}</text>
+  </view>
+
+  <button wx:if="{{!joined}}" class="primary-btn" bindtap="join">加入行程</button>
+  <button wx:else class="primary-btn" bindtap="openChat">进入车队聊天</button>
+  <button class="secondary-btn spacing" bindtap="openGroupbuys">看看路上拼团</button>
+</view>
+<view wx:else class="empty">加载中</view>

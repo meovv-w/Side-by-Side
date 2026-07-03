@@ -1,0 +1,34 @@
+.price-row {
+  margin: 24rpx 0;
+}
+
+.price {
+  margin-right: 18rpx;
+  color: #ba4a1c;
+  font-size: 44rpx;
+  font-weight: 700;
+}
+
+.origin {
+  color: #8a9692;
+  text-decoration: line-through;
+}
+
+.desc {
+  margin-top: 24rpx;
+  line-height: 1.7;
+}
+
+.progress {
+  height: 14rpx;
+  margin-top: 18rpx;
+  overflow: hidden;
+  background: #edf2f0;
+  border-radius: 999rpx;
+}
+
+.progress-inner {
+  height: 100%;
+  background: #176b5b;
+  border-radius: 999rpx;
+}

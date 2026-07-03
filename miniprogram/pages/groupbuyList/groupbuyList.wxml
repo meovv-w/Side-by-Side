@@ -1,0 +1,14 @@
+<view class="page">
+  <view class="section-title">路上拼团</view>
+  <view wx:for="{{items}}" wx:key="_id" class="card" bindtap="open" data-id="{{item._id}}">
+    <view class="row">
+      <view class="card-title">{{item.title}}</view>
+      <text class="price">¥{{item.price}}</text>
+    </view>
+    <view class="muted">{{item.merchantName}}</view>
+    <view class="muted">{{item.joined}}/{{item.minPeople}} 人 · 还差 {{item.remain}} 人 · 截止 {{item.validUntil}}</view>
+    <view class="progress">
+      <view class="progress-inner" style="width: {{item.progress}}%;"></view>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,18 @@
+<view class="page chat-page">
+  <view class="card room-card">
+    <view class="card-title">{{room.name}}</view>
+    <view class="muted">{{room.location}} · {{room.online}} 在线 · {{room.status}}</view>
+  </view>
+
+  <view class="messages">
+    <view wx:for="{{messages}}" wx:key="_id" class="message">
+      <view class="muted">{{item.nickname}} · {{item.createdAt}}</view>
+      <view>{{item.content}}</view>
+    </view>
+  </view>
+
+  <view class="composer">
+    <input class="input composer-input" placeholder="在这个地点发言" value="{{content}}" bindinput="onInput" />
+    <button class="primary-btn send-btn" bindtap="send">发送</button>
+  </view>
+</view>

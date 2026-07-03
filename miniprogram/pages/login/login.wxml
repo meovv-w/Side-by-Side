@@ -1,0 +1,8 @@
+<view class="page">
+  <view class="card">
+    <view class="title">Mock 登录</view>
+    <view class="muted">演示版只写入本机 storage，不请求真实微信用户资料。</view>
+  </view>
+  <input class="input" placeholder="昵称" value="{{nickname}}" bindinput="onInput" />
+  <button class="primary-btn" bindtap="submit">进入同路行</button>
+</view>

@@ -1,0 +1,10 @@
+.invite-card {
+  text-align: center;
+}
+.invite-code {
+  margin: 20rpx 0;
+  font-size: 64rpx;
+  font-weight: 800;
+  color: #176b5b;
+  letter-spacing: 0;
+}

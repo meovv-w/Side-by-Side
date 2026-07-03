@@ -1,0 +1,16 @@
+<view class="page chat-page">
+  <scroll-view class="messages" scroll-y>
+    <view wx:for="{{messages}}" wx:key="_id" class="message card">
+      <view class="row">
+        <text class="name">{{item.nickname}}</text>
+        <text class="muted">{{item.createdAt}}</text>
+      </view>
+      <view>{{item.content}}</view>
+    </view>
+    <view wx:if="{{messages.length === 0}}" class="empty">还没有消息</view>
+  </scroll-view>
+  <view class="composer">
+    <input class="input composer-input" placeholder="发一条消息" value="{{content}}" bindinput="onInput" />
+    <button class="primary-btn send" bindtap="send">发送</button>
+  </view>
+</view>

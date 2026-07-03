@@ -1,0 +1,27 @@
+{
+  "description": "同路行 TongDao MVP Restart",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "urlCheck": false,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "newFeature": false,
+    "useIsolateContext": true,
+    "useMultiFrameRuntime": true,
+    "ignoreUploadUnusedFiles": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "2.32.3",
+  "appid": "touristappid",
+  "projectname": "tongdao-v2",
+  "cloudfunctionRoot": "../cloudfunctions/",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  }
+}

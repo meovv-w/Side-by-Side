@@ -1,0 +1,17 @@
+<view class="page">
+  <view class="card">
+    <view class="card-title">预定下一次行程</view>
+    <view class="muted">保存起点、终点和时间，后续可转正式组队。</view>
+  </view>
+  <input class="input" placeholder="起点" data-key="from" bindinput="input" />
+  <input class="input" placeholder="终点" data-key="to" bindinput="input" />
+  <input class="input" placeholder="出发时间" value="{{form.departAt}}" data-key="departAt" bindinput="input" />
+  <button class="primary-btn" bindtap="submit">保存行程草稿</button>
+
+  <view class="section-title">已保存草稿</view>
+  <view wx:if="{{drafts.length === 0}}" class="empty">暂无草稿</view>
+  <view wx:for="{{drafts}}" wx:key="_id" class="card">
+    <view class="card-title">{{item.from}} -> {{item.to}}</view>
+    <view class="muted">{{item.departAt}} · {{item.status}}</view>
+  </view>
+</view>

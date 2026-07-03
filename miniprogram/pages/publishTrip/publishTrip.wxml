@@ -1,0 +1,10 @@
+<view class="page">
+  <view class="section-title">行程信息</view>
+  <input class="input" placeholder="出发地" value="{{form.from}}" data-field="from" bindinput="onInput" />
+  <input class="input" placeholder="目的地" value="{{form.to}}" data-field="to" bindinput="onInput" />
+  <input class="input" placeholder="出发时间，例如 2026-07-04 08:30" value="{{form.departAt}}" data-field="departAt" bindinput="onInput" />
+  <input class="input" placeholder="座位数" type="number" value="{{form.seatTotal}}" data-field="seatTotal" bindinput="onInput" />
+  <input class="input" placeholder="人均费用" type="digit" value="{{form.priceShare}}" data-field="priceShare" bindinput="onInput" />
+  <textarea class="input textarea" placeholder="备注" value="{{form.note}}" data-field="note" bindinput="onInput"></textarea>
+  <button class="primary-btn" bindtap="submit">发布</button>
+</view>
