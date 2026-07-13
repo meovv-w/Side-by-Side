@@ -1,0 +1,1 @@
+.social-row { display:flex;align-items:center;gap:15rpx;min-height:98rpx;padding:14rpx 4rpx;border-bottom:1rpx solid #e5eaee; }.social-main{min-width:0;flex:1}.social-main .muted{max-width:430rpx;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.social-row button{width:130rpx;margin:0}

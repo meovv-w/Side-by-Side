@@ -1,18 +1,3 @@
-.price {
-  color: #ba4a1c;
-  font-weight: 700;
-}
-
-.progress {
-  height: 12rpx;
-  margin-top: 18rpx;
-  overflow: hidden;
-  background: #edf2f0;
-  border-radius: 999rpx;
-}
-
-.progress-inner {
-  height: 100%;
-  background: #176b5b;
-  border-radius: 999rpx;
-}
+.list-heading { display: flex; align-items: center; justify-content: space-between; margin: 8rpx 0 18rpx; }.route-pill { padding: 8rpx 12rpx; border-radius: 9rpx; background: #172b4d; color: #fff; font-size: 20rpx; }
+.deal-card { display: flex; min-height: 250rpx; margin-bottom: 18rpx; overflow: hidden; background: #fff; border: 1rpx solid #e0e6eb; border-radius: 16rpx; }.deal-image { position: relative; display: flex; width: 230rpx; flex-shrink: 0; align-items: center; justify-content: center; color: #fff; }.deal-image.coffee { background: linear-gradient(145deg, #324c5e, #0e7c66); }.deal-image.snack { background: linear-gradient(145deg, #9a5a08, #d94841); }.product-mark { font-size: 40rpx; font-weight: 750; }.category { position: absolute; top: 12rpx; left: 12rpx; padding: 4rpx 9rpx; border-radius: 7rpx; background: rgba(255,255,255,.18); font-size: 19rpx; }.distance { position: absolute; right: 12rpx; bottom: 12rpx; padding: 4rpx 8rpx; border-radius: 7rpx; background: rgba(0,0,0,.3); font-size: 19rpx; }
+.deal-body { min-width: 0; padding: 19rpx; flex: 1; }.deal-title { font-size: 28rpx; font-weight: 700; line-height: 1.4; }.merchant { margin-top: 4rpx; color: #74818d; font-size: 21rpx; }.price-row { display: flex; align-items: baseline; gap: 9rpx; margin: 17rpx 0 10rpx; }.price { color: #d94841; font-size: 36rpx; font-weight: 800; }.origin { color: #9aa4ad; font-size: 20rpx; text-decoration: line-through; }.save { padding: 3rpx 7rpx; border-radius: 6rpx; background: #ffebe9; color: #c83c32; font-size: 18rpx; }.deal-meta { display: flex; justify-content: space-between; margin-top: 8rpx; color: #74818d; font-size: 19rpx; }

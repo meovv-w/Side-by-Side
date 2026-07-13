@@ -1,16 +1,31 @@
-<view class="page chat-page">
-  <scroll-view class="messages" scroll-y>
-    <view wx:for="{{messages}}" wx:key="_id" class="message card">
-      <view class="row">
-        <text class="name">{{item.nickname}}</text>
-        <text class="muted">{{item.createdAt}}</text>
+<view class="chat-page">
+  <view class="team-header">
+    <view><view class="team-title">{{trip.teamName || trip.title}}</view><view class="team-meta">{{members.length}}人 · {{trip.status === 'done' ? '行程已完成，群聊永久保留' : '组队中 · 位置共享开启'}}</view></view>
+    <view class="team-state">{{trip.status === 'done' ? '已完成' : '进行中'}}</view>
+  </view>
+
+  <scroll-view class="message-list" scroll-y scroll-into-view="{{scrollTarget}}" scroll-with-animation>
+    <view class="system-tip">群聊消息永久保留，退出车队后将无法继续查看</view>
+    <view wx:for="{{messages}}" wx:key="_id" id="{{item.anchor}}">
+      <view wx:if="{{item.type === 'system'}}" class="system-message">{{item.content}}</view>
+      <view wx:else class="message-row {{item.isMine ? 'mine' : ''}}" data-user="{{item.userId}}" bindtap="openMember">
+        <view class="message-avatar">{{item.avatarText}}</view>
+        <view class="message-body">
+          <view class="message-name">{{item.nickname}} · {{item.createdAt}}</view>
+          <view wx:if="{{item.type === 'image'}}" class="bubble image-bubble"><image src="{{item.content}}" mode="aspectFill"></image></view>
+          <view wx:elif="{{item.type === 'location'}}" class="bubble special-bubble"><text class="special-icon">位</text><view><view>共享位置</view><view class="bubble-meta">{{item.content}}</view></view></view>
+          <view wx:elif="{{item.type === 'groupbuy'}}" class="bubble special-bubble groupbuy-bubble"><text class="special-icon">团</text><view><view>沿途拼团</view><view class="bubble-meta">{{item.content}}</view></view></view>
+          <view wx:elif="{{item.type === 'voice'}}" class="bubble voice-bubble">))) {{item.content}}</view>
+          <view wx:else class="bubble">{{item.content}}</view>
+        </view>
       </view>
-      <view>{{item.content}}</view>
     </view>
-    <view wx:if="{{messages.length === 0}}" class="empty">还没有消息</view>
   </scroll-view>
+
   <view class="composer">
-    <input class="input composer-input" placeholder="发一条消息" value="{{content}}" bindinput="onInput" />
-    <button class="primary-btn send" bindtap="send">发送</button>
+    <button class="composer-icon" bindtap="attachment">＋</button>
+    <button class="composer-icon" bindtap="voice">话</button>
+    <input class="composer-input" placeholder="发消息到车队群" value="{{content}}" bindinput="onInput" confirm-type="send" bindconfirm="send" />
+    <button class="send-button" bindtap="send">发送</button>
   </view>
 </view>

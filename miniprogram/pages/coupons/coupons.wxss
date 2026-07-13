@@ -1,10 +1,1 @@
-.coupon {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.coupon-amount {
-  color: #ba4a1c;
-  font-size: 48rpx;
-  font-weight: 800;
-}
+.coupon-count{padding:8rpx 14rpx;border-radius:8rpx;background:#fff2cf;color:#a05a00;font-size:22rpx}.coupon-card{position:relative;display:flex;align-items:center;min-height:150rpx;margin-bottom:16rpx;overflow:hidden;background:#fff;border:1rpx solid #e0e6eb;border-radius:16rpx}.coupon-card:before{content:'';position:absolute;left:180rpx;top:-10rpx;width:20rpx;height:20rpx;border-radius:50%;background:#f4f6f8;box-shadow:0 150rpx 0 #f4f6f8}.coupon-value{display:flex;width:180rpx;flex-shrink:0;align-items:baseline;justify-content:center;flex-wrap:wrap;color:#d94841;font-size:52rpx;font-weight:800}.coupon-value>text{font-size:23rpx}.coupon-value label{display:block;width:100%;color:#a75a55;font-size:18rpx;font-weight:400;text-align:center}.coupon-main{min-width:0;padding:20rpx 16rpx;flex:1}.use-btn{width:105rpx;height:58rpx;line-height:58rpx;margin-right:16rpx;padding:0;border-radius:12rpx;background:#d94841;color:#fff;font-size:21rpx}.coupon-card.disabled{opacity:.55}.coupon-state{margin-right:18rpx;color:#74818d;font-size:22rpx}

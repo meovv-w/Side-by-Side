@@ -1,16 +1,39 @@
-<view class="page">
+<view class="page messages-page">
+  <view class="page-heading">
+    <view>
+      <view class="title">消息</view>
+      <view class="muted">车队、地点和私信都在这里</view>
+    </view>
+    <view wx:if="{{unreadCount}}" class="unread-summary">{{unreadCount}} 条未读</view>
+  </view>
+
   <view class="filter-bar">
     <view wx:for="{{filters}}" wx:key="key" class="filter {{current === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="change">{{item.label}}</view>
   </view>
 
-  <view wx:if="{{conversations.length === 0}}" class="empty">暂无消息</view>
-  <view wx:for="{{conversations}}" wx:key="_id" class="card" bindtap="open" data-id="{{item._id}}">
-    <view class="row">
-      <view>
-        <view class="card-title">{{item.title}}</view>
-        <view class="muted">{{item.lastMessage}}</view>
+  <view wx:if="{{conversations.length === 0}}" class="empty">这个分类还没有消息</view>
+  <view wx:for="{{conversations}}" wx:key="_id" class="conversation" bindtap="open" data-id="{{item._id}}">
+    <view class="conversation-icon {{item.color}}">{{item.icon}}</view>
+    <view class="conversation-main">
+      <view class="row conversation-title-row">
+        <view class="conversation-title">{{item.title}}</view>
+        <view class="caption">{{item.time}}</view>
       </view>
-      <text wx:if="{{item.unread > 0}}" class="badge">{{item.unread}}</text>
+      <view class="conversation-preview">{{item.lastMessage}}</view>
+      <view class="conversation-meta">{{item.meta}}</view>
+      <view wx:if="{{item.type === 'private' && item.relation === 'stranger'}}" class="private-actions">
+        <text class="action-link">回复</text><text class="action-link">忽略</text><text class="action-link danger-text" catchtap="block" data-user="{{item.targetId}}">拉黑</text>
+      </view>
+    </view>
+    <text wx:if="{{item.unread > 0}}" class="badge">{{item.unread}}</text>
+  </view>
+
+  <view wx:if="{{history.length}}" class="history-title"><text></text><view>历史话题</view><text></text></view>
+  <view wx:for="{{history}}" wx:key="_id" class="conversation history" bindtap="open" data-id="{{item._id}}">
+    <view class="conversation-icon green">{{item.icon}}</view>
+    <view class="conversation-main">
+      <view class="conversation-title">{{item.title}}</view>
+      <view class="conversation-preview">{{item.lastMessage}}</view>
     </view>
   </view>
 </view>

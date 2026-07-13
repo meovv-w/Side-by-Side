@@ -1,17 +1,1 @@
-<view class="page">
-  <view class="card">
-    <view class="card-title">预定下一次行程</view>
-    <view class="muted">保存起点、终点和时间，后续可转正式组队。</view>
-  </view>
-  <input class="input" placeholder="起点" data-key="from" bindinput="input" />
-  <input class="input" placeholder="终点" data-key="to" bindinput="input" />
-  <input class="input" placeholder="出发时间" value="{{form.departAt}}" data-key="departAt" bindinput="input" />
-  <button class="primary-btn" bindtap="submit">保存行程草稿</button>
-
-  <view class="section-title">已保存草稿</view>
-  <view wx:if="{{drafts.length === 0}}" class="empty">暂无草稿</view>
-  <view wx:for="{{drafts}}" wx:key="_id" class="card">
-    <view class="card-title">{{item.from}} -> {{item.to}}</view>
-    <view class="muted">{{item.departAt}} · {{item.status}}</view>
-  </view>
-</view>
+<view class="page"><view class="next-hero"><view class="title">下一趟去哪？</view><view class="muted">先记下路线，准备好后直接发起组队</view></view><view class="route-fields"><input placeholder="起点" value="{{form.from}}" data-key="from" bindinput="input"/><view class="route-arrow">→</view><input placeholder="终点" value="{{form.to}}" data-key="to" bindinput="input"/></view><view class="date-grid"><picker mode="date" value="{{form.date}}" start="2026-07-13" bindchange="date"><view class="picker-field">{{form.date}}</view></picker><picker mode="time" value="{{form.time}}" bindchange="time"><view class="picker-field">{{form.time}}</view></picker></view><textarea class="textarea" placeholder="想去的地方、同行偏好（选填）" value="{{form.note}}" data-key="note" bindinput="input"></textarea><button class="primary-btn save" bindtap="submit">保存行程草稿</button><view class="section-header"><view class="section-title">已保存草稿</view><view class="muted">{{drafts.length}} 条</view></view><view wx:if="{{drafts.length===0}}" class="empty">还没有草稿</view><view wx:for="{{drafts}}" wx:key="_id" class="card draft"><view class="draft-status {{item.status}}">{{item.status==='draft'?'草稿':'已发布'}}</view><view class="card-title">{{item.from}} → {{item.to}}</view><view class="muted">{{item.departAt}}</view><view wx:if="{{item.note}}" class="draft-note">{{item.note}}</view><button wx:if="{{item.status==='draft'}}" class="secondary-btn small-btn" data-id="{{item._id}}" bindtap="publish">转为正式行程</button></view></view>

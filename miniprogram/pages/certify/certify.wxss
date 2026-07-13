@@ -1,13 +1,1 @@
-.status-line {
-  margin: 12rpx 0;
-  color: #176b5b;
-  font-size: 44rpx;
-  font-weight: 700;
-}
-.mock-upload {
-  margin-bottom: 20rpx;
-  padding: 24rpx;
-  border: 1rpx dashed #9cb8b0;
-  border-radius: 12rpx;
-  color: #66736f;
-}
+.cert-status{display:flex;align-items:center;gap:18rpx;margin:-24rpx -24rpx 20rpx;padding:30rpx 26rpx;background:#172b4d;color:#fff}.cert-status .muted{color:#c5d1df}.cert-status.approved{background:#0e7c66}.cert-status.pending{background:#9a5a08}.status-icon{display:flex;align-items:center;justify-content:center;width:76rpx;height:76rpx;border-radius:50%;background:rgba(255,255,255,.16);font-size:28rpx;font-weight:700}.approved-info{padding:18rpx 22rpx;background:#e4f6ef;border-radius:14rpx}.detail-row{display:flex;justify-content:space-between;margin:8rpx 0;color:#53616d;font-size:23rpx}.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14rpx}.upload{display:flex;align-items:center;justify-content:center;width:100%;height:300rpx;background:#fff;border:2rpx dashed #b9c5cf;border-radius:16rpx;text-align:center;overflow:hidden}.upload image{width:100%;height:100%}.upload-plus{font-size:54rpx;color:#1f6feb}.verify-row{display:flex;align-items:center;gap:15rpx;margin-top:20rpx;padding:20rpx;background:#fff;border:1rpx solid #e0e6eb;border-radius:14rpx}.verify-icon{display:flex;align-items:center;justify-content:center;width:64rpx;height:64rpx;border-radius:50%;background:#fff2cf;color:#a05a00;font-weight:700}.verify-icon.done{background:#e4f6ef;color:#087f5b}.verify-main{flex:1}.privacy-note{margin-top:18rpx;color:#74818d;font-size:21rpx}.submit{width:100%;margin-top:24rpx}

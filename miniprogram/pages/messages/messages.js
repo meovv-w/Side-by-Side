@@ -1,5 +1,11 @@
 const api = require('../../utils/api');
 
+const labels = {
+  team: { icon: '车', color: 'blue' },
+  poi: { icon: '地', color: 'green' },
+  private: { icon: '私', color: 'violet' }
+};
+
 Page({
   data: {
     filters: [
@@ -9,7 +15,9 @@ Page({
       { key: 'private', label: '私信' }
     ],
     current: 'all',
-    conversations: []
+    conversations: [],
+    history: [],
+    unreadCount: 0
   },
 
   onShow() {
@@ -18,7 +26,13 @@ Page({
 
   load() {
     api.listConversations(this.data.current).then(res => {
-      if (res.ok) this.setData({ conversations: res.data });
+      if (!res.ok) return;
+      const all = res.data.map(item => ({ ...item, ...(labels[item.type] || labels.private) }));
+      this.setData({
+        conversations: all.filter(item => !item.archived),
+        history: all.filter(item => item.archived),
+        unreadCount: all.reduce((sum, item) => sum + Number(item.unread || 0), 0)
+      });
     });
   },
 
@@ -27,10 +41,24 @@ Page({
   },
 
   open(event) {
-    const item = this.data.conversations.find(row => row._id === event.currentTarget.dataset.id);
+    const item = [...this.data.conversations, ...this.data.history].find(row => row._id === event.currentTarget.dataset.id);
     if (!item) return;
-    if (item.type === 'team') wx.navigateTo({ url: `/pages/chatGroup/chatGroup?id=${item.targetId}` });
-    else if (item.type === 'poi') wx.navigateTo({ url: `/pages/poiChat/poiChat?id=${item.targetId}` });
-    else wx.showToast({ title: 'Mock 会话已打开', icon: 'none' });
+    api.markConversationRead(item.targetId, item.type).then(() => {
+      if (item.type === 'team') wx.navigateTo({ url: `/pages/chatGroup/chatGroup?id=${item.targetId}` });
+      else if (item.type === 'poi') wx.navigateTo({ url: `/pages/poiChat/poiChat?id=${item.targetId}` });
+      else wx.navigateTo({ url: `/pages/privateChat/privateChat?id=${item.targetId}` });
+    });
+  },
+
+  block(event) {
+    const userId = event.currentTarget.dataset.user;
+    wx.showModal({
+      title: '屏蔽这位用户？',
+      content: '屏蔽后对方不能继续向你发送私信，可在“我的 - 黑名单”中解除。',
+      success: result => {
+        if (!result.confirm) return;
+        api.setBlocked(userId, true).then(() => wx.showToast({ title: '已加入黑名单' }));
+      }
+    });
   }
 });

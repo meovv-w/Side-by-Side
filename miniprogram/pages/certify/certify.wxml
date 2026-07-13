@@ -1,12 +1,1 @@
-<view class="page">
-  <view class="card">
-    <view class="card-title">认证状态</view>
-    <view class="status-line">{{cert.status || 'none'}}</view>
-    <view class="muted">MVP 使用模拟行驶证上传，运营后台可审核待处理记录。</view>
-  </view>
-
-  <input class="input" placeholder="行驶证姓名" value="{{form.name}}" data-key="name" bindinput="input" />
-  <input class="input" placeholder="车牌号" value="{{form.plate}}" data-key="plate" bindinput="input" />
-  <view class="mock-upload">行驶证照片：mock-upload-license.jpg</view>
-  <button class="primary-btn" bindtap="submit">提交车主认证</button>
-</view>
+<view class="page certify-page"><view class="cert-status {{cert.status}}"><view class="status-icon">{{cert.status === 'approved' ? '✓' : cert.status === 'pending' ? '审' : '证'}}</view><view><view class="title">{{statusText}}</view><view class="muted">{{cert.status === 'approved' ? '你可以发布行程、组队和参与支付' : '认证前可浏览，完成后解锁完整功能'}}</view></view></view><view wx:if="{{cert.status === 'approved'}}" class="approved-info"><view class="detail-row"><text>认证姓名</text><text>{{cert.name}}</text></view><view class="detail-row"><text>认证车牌</text><text>{{cert.plate}}</text></view><view class="detail-row"><text>审核状态</text><text class="success-text">已通过</text></view></view><view class="section-title">车主资料</view><text class="field-label">真实姓名</text><input class="input" value="{{form.name}}" data-key="name" bindinput="input"/><view class="field-grid"><view><text class="field-label">车牌号</text><input class="input" value="{{form.plate}}" data-key="plate" bindinput="input"/></view><view><text class="field-label">车辆型号</text><input class="input" value="{{form.vehicleModel}}" data-key="vehicleModel" bindinput="input"/></view></view><text class="field-label">行驶证照片</text><view class="upload" bindtap="chooseLicense"><image wx:if="{{form.licensePhoto}}" src="{{form.licensePhoto}}" mode="aspectFill"></image><view wx:else><view class="upload-plus">＋</view><view>拍摄或选择行驶证</view><view class="caption">请确保文字清晰、四角完整</view></view></view><view class="verify-row" bindtap="verifyFace"><view class="verify-icon {{form.faceVerified ? 'done' : ''}}">{{form.faceVerified ? '✓' : '脸'}}</view><view class="verify-main"><view>人脸活体检测</view><view class="muted">用于确认本人提交认证</view></view><text>{{form.faceVerified ? '已完成' : '去检测 ›'}}</text></view><view class="privacy-note">资料仅用于车主身份审核，平台会按隐私政策加密存储。</view><button class="primary-btn submit" bindtap="submit">提交认证审核</button></view>

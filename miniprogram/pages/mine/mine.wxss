@@ -1,43 +1,29 @@
-.profile {
-  display: flex;
-  align-items: center;
-  gap: 22rpx;
-}
-
-.avatar {
-  width: 92rpx;
-  height: 92rpx;
-  line-height: 92rpx;
-  background: #176b5b;
-  color: #ffffff;
-  border-radius: 50%;
-  text-align: center;
-  font-size: 38rpx;
-  font-weight: 700;
-}
-
-.stats {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 18rpx;
-  margin-top: 20rpx;
-}
-
-.stat {
-  text-align: center;
-}
-
-.stat-num {
-  font-size: 48rpx;
-  font-weight: 700;
-}
-
-.menu-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16rpx;
-}
-
-.menu-grid button {
-  margin: 0;
-}
+.mine-page { min-height: 100vh; padding: 0 0 38rpx; background: #f3f5f7; }
+.profile-band { display: flex; align-items: center; gap: 22rpx; padding: 42rpx 26rpx 34rpx; background: #fff; }
+.profile-main { min-width: 0; flex: 1; }
+.profile-name { font-size: 34rpx; font-weight: 750; }
+.level-badge { display: inline-block; margin-left: 8rpx; padding: 4rpx 9rpx; border-radius: 7rpx; background: #eaf2ff; color: #1558b0; font-size: 20rpx; vertical-align: middle; }
+.growth-row { display: flex; justify-content: space-between; margin: 13rpx 0 7rpx; color: #61707e; font-size: 21rpx; }
+.trust-row { display: flex; gap: 20rpx; margin-top: 10rpx; color: #596775; font-size: 21rpx; }
+.certified { color: #087f5b; }
+.chevron { color: #8995a1; font-size: 42rpx; }
+.data-overview { display: grid; grid-template-columns: repeat(5, 1fr); padding: 22rpx 10rpx; background: #fff; border-top: 1rpx solid #edf0f2; }
+.data-overview view { text-align: center; border-right: 1rpx solid #edf0f2; }.data-overview view:last-child { border: 0; }
+.data-overview text { display: block; font-size: 27rpx; font-weight: 700; }.data-overview label { color: #7b8793; font-size: 20rpx; }
+.current-trip { display: flex; align-items: center; gap: 16rpx; margin: 18rpx 22rpx 0; padding: 20rpx; background: #172b4d; color: #fff; border-radius: 16rpx; }
+.current-icon { display: flex; align-items: center; justify-content: center; width: 62rpx; height: 62rpx; border-radius: 14rpx; background: #1f6feb; font-weight: 700; }
+.current-main { min-width: 0; flex: 1; }.current-main .muted { color: #c2cedc; }
+.menu-section, .safety-section { margin-top: 18rpx; padding: 22rpx; background: #fff; }
+.menu-title { margin-bottom: 18rpx; color: #3c4854; font-size: 25rpx; font-weight: 700; }
+.menu-grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12rpx; }
+.menu-item { display: flex; align-items: center; gap: 13rpx; padding: 16rpx; background: #f6f8fa; border: 1rpx solid #e8ecef; border-radius: 14rpx; }
+.menu-item text { display: block; font-size: 25rpx; font-weight: 650; }.menu-item label { display: block; margin-top: 2rpx; color: #84909b; font-size: 18rpx; }
+.menu-icon { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 54rpx; height: 54rpx; border-radius: 12rpx; color: #fff; font-size: 22rpx; font-weight: 700; }
+.blue { background: #1f6feb; }.green { background: #0e7c66; }.violet { background: #7557b8; }.gray { background: #6c7883; }
+.safety-section { margin-right: 22rpx; margin-left: 22rpx; border: 2rpx solid #e5a13b; border-radius: 16rpx; }
+.safety-title { color: #9a5a08; }
+.safety-grid, .feature-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24rpx 8rpx; }
+.safety-grid > view, .feature-grid > view { text-align: center; }
+.safety-icon, .feature-icon { display: flex; align-items: center; justify-content: center; width: 66rpx; height: 66rpx; margin: 0 auto 8rpx; border-radius: 15rpx; background: #fff1d6; color: #9a5a08; font-size: 24rpx; font-weight: 700; }
+.safety-grid text, .feature-grid text { color: #3f4b56; font-size: 21rpx; }
+.feature-icon.red { background: #ffebe9; color: #c83c32; }.feature-icon.amber { background: #fff2cf; color: #a05a00; }.feature-icon.violet { background: #eee8fa; color: #6845ad; }.feature-icon.blue { background: #eaf2ff; color: #1558b0; }.feature-icon.green { background: #e4f6ef; color: #087f5b; }.feature-icon.cyan { background: #e1f4f7; color: #087585; }.feature-icon.gray { background: #edf0f2; color: #596672; }.feature-icon.dark { background: #dde2e7; color: #27333e; }

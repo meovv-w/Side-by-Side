@@ -1,12 +1,12 @@
-<view class="page">
-  <view class="section-title">我的订单</view>
-  <view wx:if="{{orders.length === 0}}" class="empty">暂无订单</view>
-  <view wx:for="{{orders}}" wx:key="_id" class="card">
-    <view class="row">
-      <view class="card-title">{{item.title}}</view>
-      <text class="tag">{{item.statusText}}</text>
-    </view>
-    <view class="muted">金额 ¥{{item.amount}} · {{item.createdAt}}</view>
-    <view class="code">核销码 {{item.verifyCode}}</view>
+<view class="page orders-page">
+  <view class="row heading"><view><view class="title">我的订单</view><view class="muted">拼团、核销与退款进度</view></view><text class="section-link" bindtap="support">订单客服</text></view>
+  <view class="filter-bar"><view wx:for="{{filters}}" wx:key="key" class="filter {{current === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="change">{{item.label}}</view></view>
+  <view wx:if="{{orders.length === 0}}" class="empty"><view>这个分类暂无订单</view><button class="secondary-btn small-btn" bindtap="groupbuys">看看沿途拼团</button></view>
+  <view wx:for="{{orders}}" wx:key="_id" class="order-card" bindtap="open" data-id="{{item._id}}">
+    <view class="order-head"><text>{{item.merchantName}}</text><text class="tag {{item.statusClass}}">{{item.statusText}}</text></view>
+    <view class="order-product"><view class="product-icon">团</view><view class="product-main"><view class="card-title">{{item.title}}</view><view class="muted">{{item.createdAt}}</view></view><view class="amount">¥{{item.amount}}</view></view>
+    <view wx:if="{{item.status === 'paid' && item.refundStatus === 'none'}}" class="verify-preview"><view><text>核销码</text><strong>{{item.verifyCode}}</strong></view><text>到店出示 ›</text></view>
+    <view wx:elif="{{item.refundStatus === 'pending'}}" class="refund-tip">退款申请已提交，运营审核后原路退回</view>
+    <view wx:else class="order-footer"><text>订单实付 ¥{{item.amount}}</text><text>查看详情 ›</text></view>
   </view>
 </view>

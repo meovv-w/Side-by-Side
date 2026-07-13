@@ -1,25 +1,58 @@
-<view class="page" wx:if="{{trip}}">
-  <view class="card">
-    <view class="row">
-      <view class="title">{{trip.title}}</view>
-      <text class="tag">{{trip.statusText}}</text>
+<view class="page trip-detail with-footer" wx:if="{{trip}}">
+  <view class="trip-hero">
+    <view class="row"><text class="tag {{trip.status === 'open' ? 'success' : 'neutral'}}">{{trip.statusText}}</text><text class="match">顺路率 {{trip.matchRate || 100}}%</text></view>
+    <view class="hero-title">{{trip.from}} → {{trip.to}}</view>
+    <view class="hero-subtitle">{{trip.teamName}} · 队长 {{trip.ownerName}}</view>
+    <view class="hero-stats">
+      <view><text>{{trip.departAt}}</text><label>出发时间</label></view>
+      <view><text>{{trip.days || 1}}天</text><label>预计行程</label></view>
+      <view><text>{{trip.seatJoined}}/{{trip.seatTotal}}车</text><label>车队人数</label></view>
     </view>
-    <view class="route">{{trip.from}} -> {{trip.to}}</view>
-    <view class="muted">{{trip.departAt}}</view>
-    <view class="muted">车主 {{trip.ownerName}} · {{trip.seatJoined}}/{{trip.seatTotal}} 人 · ¥{{trip.priceShare}}</view>
-    <view class="note">{{trip.note}}</view>
   </view>
 
   <map class="map" latitude="{{center.latitude}}" longitude="{{center.longitude}}" scale="8" markers="{{markers}}" polyline="{{polyline}}"></map>
 
-  <view class="section-title">成员</view>
-  <view wx:for="{{members}}" wx:key="_id" class="card member">
-    <text>{{item.nickname}}</text>
-    <text class="tag">{{item.role}}</text>
+  <view class="card detail-card">
+    <view class="section-title">同行计划</view>
+    <view class="detail-row"><text>同行深度</text><text>{{trip.depth || '中度'}}同行</text></view>
+    <view class="detail-row"><text>沿途打算</text><text>{{trip.plansText || 'AA住宿 · 车辆互助'}}</text></view>
+    <view class="detail-row"><text>每日里程</text><text>约 {{trip.dailyKm || 200}}km</text></view>
+    <view class="detail-row"><text>人均费用</text><text>约 ¥{{trip.priceShare}}</text></view>
+    <view wx:if="{{trip.equipmentText}}" class="safety-note">保障设备：{{trip.equipmentText}}</view>
+    <view wx:if="{{trip.note}}" class="trip-note">{{trip.note}}</view>
   </view>
 
-  <button wx:if="{{!joined}}" class="primary-btn" bindtap="join">加入行程</button>
-  <button wx:else class="primary-btn" bindtap="openChat">进入车队聊天</button>
-  <button class="secondary-btn spacing" bindtap="openGroupbuys">看看路上拼团</button>
+  <view wx:if="{{owned && requests.length}}">
+    <view class="section-header"><view class="section-title">入队申请</view><view class="tag warning">{{requests.length}} 待处理</view></view>
+    <view wx:for="{{requests}}" wx:key="_id" class="card request-card">
+      <view class="row"><view><view class="card-title">{{item.nickname}}</view><view class="muted">{{item.vehicleModel}}</view></view><view class="caption">{{item.createdAt}}</view></view>
+      <view class="request-message">{{item.message}}</view>
+      <view class="request-actions"><button class="secondary-btn small-btn" data-id="{{item._id}}" data-approve="no" bindtap="review">拒绝</button><button class="primary-btn small-btn" data-id="{{item._id}}" data-approve="yes" bindtap="review">同意加入</button></view>
+    </view>
+  </view>
+
+  <view class="section-header"><view class="section-title">车队成员</view><view class="muted">{{members.length}} 人</view></view>
+  <view class="members-card">
+    <view wx:for="{{members}}" wx:key="_id" class="member" data-id="{{item.userId}}" bindtap="openMember">
+      <view class="avatar small">{{item.avatarText}}</view>
+      <view class="member-main"><view>{{item.nickname}} <text wx:if="{{item.role === 'owner'}}" class="tag warning">队长</text></view><view class="caption">Lv.{{item.level}} · 信用 {{item.creditScore}}</view></view><text>›</text>
+    </view>
+  </view>
+
+  <view class="secondary-actions">
+    <button class="secondary-btn" bindtap="greetOwner">联系队长</button>
+    <button class="secondary-btn" open-type="share">分享行程</button>
+    <button class="secondary-btn" bindtap="openGroupbuys">沿途拼团</button>
+  </view>
+
+  <view wx:if="{{owned}}" class="owner-actions"><button class="secondary-btn" bindtap="edit">编辑行程</button><button class="danger-outline" bindtap="end">结束行程</button></view>
+  <button wx:if="{{joined && !owned}}" class="leave-link" bindtap="leave">退出车队</button>
+
+  <view class="footer-actions">
+    <button class="secondary-btn" bindtap="greetOwner">先聊聊</button>
+    <button wx:if="{{joined}}" class="primary-btn" bindtap="openChat">进入车队群聊</button>
+    <button wx:elif="{{requestStatus === 'pending'}}" class="secondary-btn" disabled>等待队长审批</button>
+    <button wx:else class="primary-btn" bindtap="apply">申请加入车队</button>
+  </view>
 </view>
-<view wx:else class="empty">加载中</view>
+<view wx:else class="empty">正在加载行程</view>

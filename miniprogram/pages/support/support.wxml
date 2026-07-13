@@ -1,8 +1,13 @@
 <view class="page">
-  <view class="card">
-    <view class="card-title">客服与投诉</view>
-    <view class="muted">用户端提交后，运营后台可查看并处理。</view>
-  </view>
-  <input class="input" placeholder="请输入问题或投诉内容" value="{{title}}" bindinput="input" />
-  <button class="primary-btn" bindtap="submit">提交工单</button>
+  <view class="support-hero"><view><view class="title">客服中心</view><view class="muted">工作日 09:00-21:00 · 紧急情况请拨打 110/120</view></view><view class="support-icon">客</view></view>
+  <view class="section-title">常见问题</view>
+  <view class="faq-list"><view wx:for="{{faqs}}" wx:key="q" class="faq" data-index="{{index}}" bindtap="faq"><view class="row"><text>{{item.q}}</text><text>{{item.open?'−':'＋'}}</text></view><view wx:if="{{item.open}}" class="faq-answer">{{item.a}}</view></view></view>
+  <view class="section-title">提交问题或投诉</view>
+  <picker range="{{categories}}" value="{{categoryIndex}}" bindchange="category"><view class="picker-field">{{selectedCategory}}</view></picker>
+  <input class="input" placeholder="问题标题" value="{{title}}" data-key="title" bindinput="input"/>
+  <textarea class="textarea" placeholder="请描述发生时间、相关订单或车队信息" value="{{content}}" data-key="content" bindinput="input"></textarea>
+  <button class="primary-btn submit" bindtap="submit">提交工单</button>
+  <view class="section-header"><view class="section-title">我的工单</view><view class="muted">{{tickets.length}} 条</view></view>
+  <view wx:if="{{tickets.length===0}}" class="empty">还没有工单</view>
+  <view wx:for="{{tickets}}" wx:key="_id" class="card ticket"><view class="row"><view class="card-title">{{item.title}}</view><text class="tag {{item.status==='open'?'warning':'success'}}">{{item.status==='open'?'处理中':'已回复'}}</text></view><view class="muted">{{item.category}} · {{item.createdAt}}</view><view wx:if="{{item.lastReply}}" class="reply">客服：{{item.lastReply}}</view></view>
 </view>

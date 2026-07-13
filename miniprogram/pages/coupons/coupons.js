@@ -1,11 +1,1 @@
-const api = require('../../utils/api');
-
-Page({
-  data: { coupons: [] },
-
-  onShow() {
-    api.listCoupons().then(res => {
-      if (res.ok) this.setData({ coupons: res.data });
-    });
-  }
-});
+const api=require('../../utils/api');Page({data:{tabs:[{key:'unused',label:'可使用'},{key:'used',label:'已使用'},{key:'expired',label:'已过期'}],current:'unused',all:[],coupons:[]},onShow(){api.listCoupons().then(r=>{if(r.ok){this.setData({all:r.data},this.filter);}});},change(e){this.setData({current:e.currentTarget.dataset.key},this.filter);},filter(){const now='2026-07-13';this.setData({coupons:this.data.all.filter(c=>this.data.current==='expired'?c.expireAt<now:(c.status===this.data.current&&c.expireAt>=now))});},use(){wx.navigateTo({url:'/pages/groupbuyList/groupbuyList'});}});

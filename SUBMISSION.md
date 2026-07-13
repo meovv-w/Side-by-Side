@@ -1,46 +1,34 @@
-# 同路行 TongDao-v2 MVP 提交说明
+# 同路行 V1 提交说明
 
-您好，我已完成「同路行」自驾社交平台 V1 MVP 增强版演示版本。
+目前交付的是按方案 UI 重做后的 V1 完整交互版，不再是只有页面和占位按钮的初版。
 
-## 项目说明
+## 交付内容
 
-本项目以 HR 文档中的 MVP 要求为目标，完成了用户端小程序、商家后台、运营后台的可演示闭环。当前版本采用 mock 数据和 mock 接口优先，重点验证产品结构、业务流程、页面交互和后台管理能力。
+- 微信小程序用户端：4 个 Tab，合计 24 个页面。
+- 商家中心：商品、订单、核销、结算、券、推广、救援和考核。
+- 运营平台：审核、订单退款、结算、券预算、邀请奖励、成长规则、内容和客服投诉。
+- 自动验收脚本、需求覆盖表、老板人工验收清单和微信预览二维码。
+- 公开仓库：<https://github.com/meovv-w/Side-by-Side>
 
 ## 体验入口
 
-- 小程序预览二维码：`/home/lin/workspace/tongdao-v2/preview-qrcode.png`
-- 小程序项目目录：`/home/lin/workspace/tongdao-v2/miniprogram`
-- 商家后台：`/home/lin/workspace/tongdao-v2/admin-merchant/index.html`
-- 运营后台：`/home/lin/workspace/tongdao-v2/admin-ops/index.html`
-- HR 需求覆盖清单：`/home/lin/workspace/tongdao-v2/HR-CHECKLIST.md`
+- 小程序二维码：`/home/lin/workspace/tongdao-v2/preview-qrcode.png`
+- 商家中心：`/home/lin/workspace/tongdao-v2/admin-merchant/index.html`
+- 运营平台：`/home/lin/workspace/tongdao-v2/admin-ops/index.html`
+- 人工验收清单：`/home/lin/workspace/tongdao-v2/BOSS-ACCEPTANCE.md`
 
-## 已覆盖功能
-
-- 用户端 4 个 Tab：地图、消息、行程、我的。
-- 地图：队友位置、路线、图层开关、拼团、安全 POI、路况、地点聊天室、SOS。
-- 消息：车队群聊、地点聊天室、私信入口。
-- 行程：发布行程、行程列表、行程详情、加入行程。
-- 拼团：拼团列表、详情、阶梯价、进度条、模拟下单。
-- 订单：核销码展示。
-- 我的：用户资料、同路值、等级、车主认证、邀请、券包、下一趟行程、客服。
-- 商家后台：店铺信息、商品管理、订单、核销、结算、拉新券、推广码、修车救援。
-- 运营后台：数据看板、用户审核、商家审核、订单/退款、结算、商家考核、券、邀请、等级规则、地点聊天室、客服/投诉。
-
-## 验证结果
-
-已运行：
-
-```bash
-cd /home/lin/workspace/tongdao-v2
-node scripts/verify.js
-```
-
-结果：
+## 已验证
 
 ```text
-TongDao-v2 verify ok
+node scripts/verify.js
+TongDao-v2 product verify ok
+
+微信 miniprogram-ci
+76 个代码文件编译成功，预览二维码生成成功
 ```
 
-## 当前边界
+两个后台已用 Chromium 检查 1365×900 桌面尺寸和 390×844 手机尺寸，无控件重叠和页面溢出。
 
-当前版本是 MVP 演示版。真实上线前仍需接入微信真实登录、手机号验证码、高德地图 SDK、真实定位、实时 IM、微信支付、退款、分账、商家扫码核销、云数据库权限和后台账号体系。
+## 对完成度的准确描述
+
+方案中的 UI、入口和用户业务流程已完整呈现，所有主要操作都有状态和本地持久化。当前不应对外称为“生产上线完成”：微信支付、高德实时服务、腾讯云 IM、OCR/活体、生产数据库、后台权限、回调验签、正式隐私协议和小程序审核仍需要公司账号、密钥和部署环境。

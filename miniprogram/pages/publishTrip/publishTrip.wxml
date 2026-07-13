@@ -1,10 +1,58 @@
-<view class="page">
-  <view class="section-title">行程信息</view>
-  <input class="input" placeholder="出发地" value="{{form.from}}" data-field="from" bindinput="onInput" />
-  <input class="input" placeholder="目的地" value="{{form.to}}" data-field="to" bindinput="onInput" />
-  <input class="input" placeholder="出发时间，例如 2026-07-04 08:30" value="{{form.departAt}}" data-field="departAt" bindinput="onInput" />
-  <input class="input" placeholder="座位数" type="number" value="{{form.seatTotal}}" data-field="seatTotal" bindinput="onInput" />
-  <input class="input" placeholder="人均费用" type="digit" value="{{form.priceShare}}" data-field="priceShare" bindinput="onInput" />
-  <textarea class="input textarea" placeholder="备注" value="{{form.note}}" data-field="note" bindinput="onInput"></textarea>
-  <button class="primary-btn" bindtap="submit">发布</button>
+<view class="page publish-page with-footer">
+  <view class="stepper">
+    <view class="step {{step >= 1 ? 'active' : ''}}"><text>1</text><label>画路线</label></view><view class="step-line {{step >= 2 ? 'active' : ''}}"></view>
+    <view class="step {{step >= 2 ? 'active' : ''}}"><text>2</text><label>行程详情</label></view><view class="step-line {{step >= 3 ? 'active' : ''}}"></view>
+    <view class="step {{step >= 3 ? 'active' : ''}}"><text>3</text><label>确认发布</label></view>
+  </view>
+
+  <view wx:if="{{step === 1}}">
+    <view class="section-header"><view><view class="section-title">路线规划</view><view class="muted">可添加 1-5 个途经点</view></view></view>
+    <view class="route-form card">
+      <view class="route-dot start"></view><input class="route-input" placeholder="起点（默认当前位置）" value="{{form.from}}" data-field="from" bindinput="onInput" />
+      <view class="route-line"></view>
+      <view class="route-dot waypoint"></view><input class="route-input" placeholder="途经点，用顿号分隔（选填）" value="{{form.waypointsText}}" data-field="waypointsText" bindinput="onInput" />
+      <view class="route-line"></view>
+      <view class="route-dot end"></view><input class="route-input" placeholder="终点" value="{{form.to}}" data-field="to" bindinput="onInput" />
+    </view>
+    <map class="route-map" latitude="30.2741" longitude="120.1551" scale="8" markers="{{markers}}" polyline="{{polyline}}"></map>
+  </view>
+
+  <view wx:elif="{{step === 2}}">
+    <view class="section-header"><view class="section-title">行程详情</view></view>
+    <text class="field-label">行程标题</text><input class="input" placeholder="例如：川西三日轻野自驾" value="{{form.title}}" data-field="title" bindinput="onInput" />
+    <text class="field-label">车队名称</text><input class="input" placeholder="给车队取个名字" value="{{form.teamName}}" data-field="teamName" bindinput="onInput" />
+    <view class="field-grid">
+      <view><text class="field-label">出发日期</text><picker mode="date" value="{{form.departDate}}" start="2026-07-13" bindchange="onDate"><view class="picker-field">{{form.departDate}}</view></picker></view>
+      <view><text class="field-label">出发时间</text><picker mode="time" value="{{form.departTime}}" bindchange="onTime"><view class="picker-field">{{form.departTime}}</view></picker></view>
+      <view><text class="field-label">预计天数</text><input class="input" type="number" value="{{form.days}}" data-field="days" bindinput="onInput" /></view>
+      <view><text class="field-label">每日里程 km</text><input class="input" type="number" value="{{form.dailyKm}}" data-field="dailyKm" bindinput="onInput" /></view>
+      <view><text class="field-label">车队上限（1-20）</text><input class="input" type="number" value="{{form.seatTotal}}" data-field="seatTotal" bindinput="onInput" /></view>
+      <view><text class="field-label">人均预估费用</text><input class="input" type="digit" value="{{form.priceShare}}" data-field="priceShare" bindinput="onInput" /></view>
+    </view>
+    <text class="field-label">同路深度</text><picker range="{{depthOptions}}" value="{{depthIndex}}" bindchange="onDepth"><view class="picker-field">{{form.depth}}同行</view></picker>
+    <text class="field-label">沿途打算（可多选）</text>
+    <view class="option-grid"><view wx:for="{{planOptions}}" wx:key="key" class="option {{item.checked ? 'selected' : ''}}" data-key="{{item.key}}" bindtap="togglePlan">{{item.label}}</view></view>
+    <text class="field-label">补充说明</text><textarea class="textarea" placeholder="驾驶节奏、住宿偏好、车辆要求等" value="{{form.note}}" data-field="note" bindinput="onInput"></textarea>
+    <view class="setting-row"><view><view>公开行程</view><view class="muted">其他用户可在推荐列表看到</view></view><switch checked="{{form.privacy === 'public'}}" bindchange="onPrivacy" color="#1F6FEB" /></view>
+    <view class="setting-row"><view><view>允许附近车队发现</view><view class="muted">地图上仅展示队长位置</view></view><switch checked="{{form.discoverable}}" bindchange="onDiscoverable" color="#1F6FEB" /></view>
+  </view>
+
+  <view wx:else class="confirm-page">
+    <view class="confirm-icon">行</view><view class="title">确认{{id ? '更新' : '发布'}}行程</view><view class="muted">发布后将开始匹配顺路车队</view>
+    <view class="summary-card">
+      <view class="summary-route">{{form.from}} → {{form.to}}</view>
+      <view wx:if="{{form.waypointsText}}" class="muted">途经：{{form.waypointsText}}</view>
+      <view class="summary-row"><text>出发</text><text>{{form.departDate}} {{form.departTime}}</text></view>
+      <view class="summary-row"><text>车队</text><text>{{form.teamName}} · 上限{{form.seatTotal}}辆</text></view>
+      <view class="summary-row"><text>节奏</text><text>{{form.depth}} · 每日{{form.dailyKm}}km</text></view>
+      <view class="summary-row"><text>费用</text><text>人均约 ¥{{form.priceShare}}</text></view>
+    </view>
+  </view>
+
+  <view class="wizard-footer">
+    <button wx:if="{{step > 1}}" class="secondary-btn" bindtap="previous">上一步</button>
+    <view wx:else></view>
+    <button wx:if="{{step < 3}}" class="primary-btn" bindtap="next">下一步</button>
+    <button wx:else class="primary-btn" bindtap="submit">{{id ? '保存修改' : '确认发布'}}</button>
+  </view>
 </view>

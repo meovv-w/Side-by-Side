@@ -16,7 +16,7 @@ function ok(data) {
 
 async function getOrCreateUser(profile = {}) {
   const { OPENID } = cloud.getWXContext();
-  const openid = OPENID || 'cloud-mock-openid';
+  const openid = OPENID || 'cloud-local-openid';
   const res = await db.collection('users').where({ openid }).limit(1).get();
   if (res.data.length > 0) {
     const user = res.data[0];
@@ -44,10 +44,10 @@ async function getOrCreateUser(profile = {}) {
 }
 
 exports.main = async event => {
-  const action = event.action || 'mockLogin';
+  const action = event.action || 'login';
 
   try {
-    if (action === 'mockLogin') {
+    if (action === 'login' || action === 'mockLogin') {
       return ok(await getOrCreateUser(event.profile || {}));
     }
 

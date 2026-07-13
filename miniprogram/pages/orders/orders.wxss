@@ -1,10 +1,2 @@
-.code {
-  margin-top: 20rpx;
-  padding: 22rpx;
-  background: #17211f;
-  color: #ffffff;
-  border-radius: 10rpx;
-  font-size: 36rpx;
-  letter-spacing: 2rpx;
-  text-align: center;
-}
+.heading { margin: 8rpx 2rpx 18rpx; }.orders-page .filter { font-size: 22rpx; }.empty button { width: 260rpx; margin-top: 20rpx; }
+.order-card { margin-bottom: 18rpx; background: #fff; border: 1rpx solid #e0e6eb; border-radius: 16rpx; overflow: hidden; }.order-head { display: flex; align-items: center; justify-content: space-between; padding: 18rpx 22rpx; border-bottom: 1rpx solid #edf0f2; font-size: 24rpx; font-weight: 650; }.order-product { display: flex; align-items: center; gap: 15rpx; padding: 22rpx; }.product-icon { display: flex; align-items: center; justify-content: center; width: 82rpx; height: 82rpx; border-radius: 14rpx; background: #ffebe9; color: #c83c32; font-weight: 750; }.product-main { min-width: 0; flex: 1; }.amount { font-weight: 700; }.verify-preview { display: flex; align-items: center; justify-content: space-between; padding: 16rpx 22rpx; background: #172b4d; color: #fff; font-size: 22rpx; }.verify-preview strong { margin-left: 12rpx; font-family: monospace; font-size: 30rpx; letter-spacing: 4rpx; }.verify-preview > text { color: #a9c7ff; }.refund-tip { padding: 16rpx 22rpx; background: #fff4d6; color: #89510a; font-size: 22rpx; }.order-footer { display: flex; justify-content: space-between; padding: 15rpx 22rpx; border-top: 1rpx solid #edf0f2; color: #6e7b87; font-size: 22rpx; }

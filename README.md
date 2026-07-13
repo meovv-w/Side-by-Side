@@ -1,214 +1,95 @@
-# 同路行 TongDao MVP Restart
+# 同路行 TongDao V1
 
-自驾社交微信小程序 V1 MVP 增强版演示实现：覆盖地图、消息、行程、我的 4 个 Tab，并补齐商家后台、运营后台和 HR 文档要求的主要业务链路 mock。
+面向自驾用户的微信小程序 V1 完整交互版。项目按《自驾社交技术开发文档3 - 方案+UI+MVP增强版》实现地图、消息、行程、我的 4 个 Tab，并提供可操作的商家后台和运营后台。
 
-## MVP 范围
+当前交付目标是完整呈现真实用户流程：页面入口可达、操作有校验、结果有状态、数据在本机持久化。微信支付、高德实时服务、腾讯云 IM、生产数据库等需要企业账号和密钥的能力，已保留业务流程和替换边界，但不能在无凭证环境中伪装为正式服务。
 
-本目录是干净重启版本，不修改旧项目。
+## 已完成功能
 
-已实现 HR 演示闭环：
+### 用户端
 
-- 登录/mock 用户
-- 地图 mock、队友位置、路线、POI、路况、安全 POI、SOS
-- 消息 Tab：车队、地点、私信筛选
-- 行程列表
-- 发布行程
-- 行程详情
-- 加入行程
-- 车队聊天 mock
-- 车主认证 mock
-- 同路值、等级、勋章数据 mock
-- 邀请链接/二维码 mock
-- 券包 mock
-- 下一趟行程草稿
-- 拼团列表
-- 拼团详情
-- 阶梯价格和进度条 mock
-- 模拟下单
-- 订单核销码
-- 客服工单 mock
-- 商家后台 10 类模块原型
-- 运营后台 12 类模块原型
+- 地图首页：当前车队、剩余里程、未读数、海拔天气、队友/终点/其他车队/沿途服务/安全 POI/路况/拼团/地点话题标记。
+- 地图交互：图层独立开关、标记详情浮窗、关注、私信、导航、拨号、群聊转发、位置上报、SOS。
+- 消息：全部/车队/地点/私信筛选，未读状态，历史地点话题。
+- 车队群聊：文本、图片、位置、拼团卡片、语音状态消息，完成行程后永久保留。
+- 私信：同队/互关无限发送，单向关注 3 条限制，陌生人关注后发送，黑名单。
+- 地点聊天室：创建、关注、发言、活跃/静默/归档状态。
+- 行程：顺路率推荐、申请入队、队长审批、退出、结束、成员主页和三步发布向导。
+- 三步发布：路线与途经点、日期/里程/同行深度/同行计划/人数/隐私、发布确认。
+- 拼团：附近排序、阶梯价格、参团头像、动态进度、倒计时、分享、券抵扣和库存。
+- 订单：待核销/退款/完成筛选、6 位核销码、订单详情、退款申请和客服入口。
+- 我的：同路值、等级、信用、数据概览、当前行程、关注/粉丝/黑名单、车主认证、紧急联系人、哨兵模式、勋章、邀请、券包、下一趟行程和隐私设置。
+- 登录与认证：微信资料登录、手机号表单、行驶证拍摄/选择、活体步骤和审核状态。
 
-## 目录结构
+### 管理后台
+
+- 商家中心：登录、店铺资料、商品发布/上下架、阶梯价校验、订单筛选、核销、核销记录、银行卡、结算、拉新券、推广码、救援服务、商家考核和通知。
+- 运营平台：登录、数据看板、车主审核、商家审核、订单、退款审核、结算、商家等级、券预算、邀请奖励、同路值规则、地点聊天室、客服投诉和救援服务商。
+- 两个后台的操作状态均写入浏览器 `localStorage`，刷新后保留，可恢复示例数据。
+
+## 项目结构
 
 ```text
 tongdao-v2/
-├── miniprogram/
-│   ├── app.js
-│   ├── app.json
-│   ├── app.wxss
-│   ├── project.config.json
-│   ├── sitemap.json
-│   ├── utils/
-│   │   ├── api.js
-│   │   └── mockStore.js
-│   └── pages/
-│       ├── index/
-│       ├── messages/
-│       ├── trips/
-│       ├── publishTrip/
-│       ├── tripDetail/
-│       ├── chatGroup/
-│       ├── certify/
-│       ├── invite/
-│       ├── coupons/
-│       ├── nextTrip/
-│       ├── support/
-│       ├── groupbuyList/
-│       ├── groupbuyDetail/
-│       ├── orders/
-│       ├── mine/
-│       └── login/
-├── admin-merchant/
-│   └── index.html
-├── admin-ops/
-│   └── index.html
-├── cloudfunctions/
-│   ├── login/
-│   ├── trip/
-│   ├── groupbuy/
-│   ├── order/
-│   └── chat/
-└── scripts/
-    └── mock-data.json
+├── miniprogram/              微信原生小程序，24 个页面
+│   ├── pages/                4 个 Tab 和 20 个业务页
+│   ├── images/               TabBar 与地图标记资源
+│   └── utils/                本地产品数据层与 API 适配器
+├── admin-merchant/index.html 可独立打开的商家中心
+├── admin-ops/index.html      可独立打开的运营平台
+├── cloudfunctions/           5 个云开发迁移入口
+├── scripts/mock-data.json    与本地数据层同步的初始化数据
+├── AUDIT.md                  旧项目可复用项与 v2 缺口审计
+├── HR-CHECKLIST.md           文档需求对应表
+├── BOSS-ACCEPTANCE.md        老板验收测试清单
+└── SUBMISSION.md             提交说明
 ```
 
-## 数据集合
+## 运行与体验
 
-`users`
+小程序：
 
-| 字段 | 说明 |
-|---|---|
-| `_id` | 用户 ID |
-| `openid` | 云开发 openid，mock 时为固定值 |
-| `nickname` | 昵称 |
-| `avatar` | 头像 URL |
-| `role` | `owner` 或 `passenger` |
-| `createdAt` | 创建时间 |
+1. 微信开发者工具导入 `/home/lin/workspace/tongdao-v2/miniprogram`。
+2. 使用有权限的 AppID，或扫描 [preview-qrcode.png](./preview-qrcode.png)。
+3. 首次进入已有完整示例状态；地图图层面板底部可恢复初始数据。
 
-`trips`
+后台可直接用浏览器打开：
 
-| 字段 | 说明 |
-|---|---|
-| `_id` | 行程 ID |
-| `ownerId` | 车主用户 ID |
-| `ownerName` | 车主昵称 |
-| `title` | 行程标题 |
-| `from` / `to` | 起终点文本 |
-| `departAt` | 出发时间 |
-| `seatTotal` | 总座位 |
-| `seatJoined` | 已加入人数 |
-| `priceShare` | 人均油费/过路费 |
-| `status` | `open` / `full` / `done` |
-| `route` | 地图 polyline mock |
-| `teammates` | 队友位置 mock |
+- [商家中心](./admin-merchant/index.html)
+- [运营平台](./admin-ops/index.html)
 
-`trip_members`
+后台登录页已填入体验账号，直接点击登录即可。无需启动 Web 服务。
 
-| 字段 | 说明 |
-|---|---|
-| `_id` | 成员记录 ID |
-| `tripId` | 行程 ID |
-| `userId` | 用户 ID |
-| `nickname` | 昵称 |
-| `role` | `owner` 或 `passenger` |
-| `joinedAt` | 加入时间 |
-
-`messages`
-
-| 字段 | 说明 |
-|---|---|
-| `_id` | 消息 ID |
-| `tripId` | 行程 ID |
-| `userId` | 发送者 ID |
-| `nickname` | 发送者昵称 |
-| `content` | 文本内容 |
-| `createdAt` | 发送时间 |
-
-`groupbuys`
-
-| 字段 | 说明 |
-|---|---|
-| `_id` | 拼团 ID |
-| `title` | 商品/服务标题 |
-| `merchantName` | 商家名 |
-| `price` | 拼团价 |
-| `originPrice` | 原价 |
-| `minPeople` | 成团人数 |
-| `joined` | 已参团人数 |
-| `validUntil` | 截止时间 |
-| `description` | 说明 |
-
-`orders`
-
-| 字段 | 说明 |
-|---|---|
-| `_id` | 订单 ID |
-| `userId` | 用户 ID |
-| `groupbuyId` | 拼团 ID |
-| `title` | 商品标题 |
-| `amount` | 支付金额 |
-| `status` | `paid` / `used` |
-| `verifyCode` | 核销码 |
-| `createdAt` | 创建时间 |
-
-## 运行方式
-
-1. 打开微信开发者工具。
-2. 导入项目目录：`/home/lin/workspace/tongdao-v2/miniprogram`。
-3. AppID 可先使用测试号或替换 `project.config.json` 里的 `appid`。
-4. 勾选“不校验合法域名、web-view、TLS 版本以及 HTTPS 证书”。
-5. 编译后进入首页，点击底部“我的”完成 Mock 登录，或直接按演示路径操作。
-
-默认使用本地 mock adapter，无需云开发环境即可演示。数据写在本机小程序 storage 中，点击首页“重置演示数据”可恢复初始数据。
-
-## 本地验证
+## 验证
 
 ```bash
 cd /home/lin/workspace/tongdao-v2
+node scripts/sync-mock-data.js
 node scripts/verify.js
 ```
 
-该脚本会检查页面四件套、HR 4 Tab、云函数入口、mock 初始化数据、商家/运营后台入口，并跑通登录、发布行程、聊天、拼团下单、订单、认证、邀请、券包、下一趟行程、客服和后台统计链路。
+自动验收覆盖 24 个页面、4 个 Tab、5 个云函数入口、用户业务状态、交易状态和后台持久化。当前结果：
 
-## HR 需求验收
+```text
+TongDao-v2 product verify ok
+```
 
-逐项覆盖表见 [HR-CHECKLIST.md](./HR-CHECKLIST.md)。
+2026-07-13 已通过微信官方 `miniprogram-ci` 编译并重新生成预览二维码；编译包包含 76 个代码文件。
 
-后台入口：
+## 数据模式
 
-- 商家后台：`/home/lin/workspace/tongdao-v2/admin-merchant/index.html`
-- 运营后台：`/home/lin/workspace/tongdao-v2/admin-ops/index.html`
+默认使用 `miniprogram/utils/api.js` + `mockStore.js` 的本地产品模式。它不是只读假页面：申请、审批、聊天、关注、券、订单、退款、认证、设置、客服等操作都会写入小程序 storage。
 
-## 云开发替换点
+5 个云函数目录保留为迁移入口，当前只覆盖基础聚合 action。不能只把 `useCloud` 改为 `true` 就视为生产上线；正式切云前还要补齐新业务 action、数据库索引、事务、权限规则、风控和回调验签。
 
-当前页面统一调用 `miniprogram/utils/api.js`。5 个云函数已按 action 提供 MVP 版本，返回结构与本地 mock adapter 一致。要接真实云开发：
+## 正式上线依赖
 
-1. 在 `app.js` 中填入真实 `env`。
-2. 将 `api.js` 中的 `useCloud = false` 改成 `true`。
-3. 在微信开发者工具中上传并部署 `cloudfunctions/login`、`trip`、`groupbuy`、`order`、`chat`。
-4. 按 `scripts/mock-data.json` 初始化云数据库集合。
+- 微信主体认证、用户登录与手机号授权。
+- 微信支付商户号、JSAPI 支付、回调验签、退款与分账。
+- 高德地图 Key、实时定位、路线规划、POI、天气、海拔和交通事件。
+- 腾讯云 IM 或等价实时消息服务、图片存储、未读推送和服务端私信规则。
+- 行驶证 OCR、人脸活体服务和真实运营审核流。
+- 云数据库或 Node.js + MySQL/Redis、后台账号权限、审计日志和数据互通。
+- 正式商品图片、商户资质、隐私政策、用户协议及小程序审核发布。
 
-云函数按 action 分发，避免首版部署十几个函数。
-
-## 演示路径
-
-1. 进入地图 Tab，查看队友位置、路线、图层、地点聊天室和 SOS。
-2. 进入消息 Tab，切换车队/地点/私信，打开车队群聊并发送消息。
-3. 进入行程 Tab，发布行程、查看详情、加入行程。
-4. 从地图或我的页进入拼团，查看阶梯价和进度，模拟下单。
-5. 进入订单页查看核销码。
-6. 进入我的页，查看同路值、认证、券包、邀请、下一趟行程、客服入口。
-7. 打开商家后台，演示商品、订单、核销、结算、拉新券、推广码、修车救援。
-8. 打开运营后台，演示审核、订单退款、结算、商家考核、券、邀请、聊天室、客服。
-
-## 上线前仍需真实接入
-
-- 微信一键登录/手机号验证码。
-- 行驶证上传、人脸活体、真实审核流。
-- 高德地图 SDK、真实定位、路线、POI、天气、路况。
-- 实时 IM、私信风控服务端校验。
-- 微信支付、退款、分账。
-- 商家扫码核销、真实结算。
-- 运营后台真实账号权限和云数据库权限规则。
+完整人工验收步骤见 [BOSS-ACCEPTANCE.md](./BOSS-ACCEPTANCE.md)。

@@ -1,17 +1,25 @@
-<view class="page">
-  <view class="card invite-card">
-    <view class="muted">我的专属推广码</view>
-    <view class="invite-code">{{inviteCode}}</view>
-    <view class="muted">{{qrcode}}</view>
+<view class="page invite-page">
+  <view class="invite-hero">
+    <view class="invite-label">我的专属邀请标识</view>
+    <view class="invite-code" bindtap="copy">{{inviteCode}}</view>
+    <view class="invite-sub">好友通过分享卡注册后自动与你绑定</view>
+    <button class="share-button" open-type="share">分享给微信好友</button>
   </view>
-  <button class="primary-btn" bindtap="share">生成邀请链接/二维码</button>
-
-  <view class="section-title">邀请记录</view>
-  <view wx:for="{{records}}" wx:key="_id" class="card">
-    <view class="row">
-      <view class="card-title">{{item.inviteeName}}</view>
-      <text class="tag">+{{item.bonus}} 同路值</text>
+  <view class="card reward-progress">
+    <view class="row"><view class="card-title">阶梯奖励</view><view class="muted">已邀请 {{records.length}} 人</view></view>
+    <view class="progress"><view class="progress-inner" style="width:{{progress}}%"></view></view>
+    <view wx:for="{{rewards}}" wx:key="target" class="reward-row">
+      <view class="reward-check {{item.reached?'done':''}}">{{item.reached?'✓':item.target}}</view>
+      <view class="reward-main"><view>{{item.title}}</view><view class="muted">{{item.reward}}</view></view>
+      <text class="tag {{item.reached?'success':'neutral'}}">{{item.reached?'已获得':'未达成'}}</text>
     </view>
-    <view class="muted">{{item.source}} · {{item.status}}</view>
   </view>
+  <view class="section-header"><view class="section-title">邀请记录</view><view class="muted">自动归因</view></view>
+  <view wx:if="{{records.length===0}}" class="empty">还没有邀请记录</view>
+  <view wx:for="{{records}}" wx:key="_id" class="card invite-record">
+    <view class="avatar small">{{item.avatarText}}</view>
+    <view class="record-main"><view class="card-title">{{item.inviteeName}}</view><view class="muted">{{item.source==='qrcode'?'扫码注册':'分享链接'}} · {{item.status==='ordered'?'已完成首单':'已注册'}}</view></view>
+    <text class="tag success">+{{item.bonus}}同路值</text>
+  </view>
+  <view class="invite-rule"><view class="card-title">邀请认定规则</view><view>分享链接或邀请卡注册后自动绑定；新用户注册 7 天内可补充绑定邀请人，每位用户仅能绑定一次。</view></view>
 </view>

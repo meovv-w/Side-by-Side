@@ -1,10 +1,17 @@
-.badge {
-  min-width: 36rpx;
-  height: 36rpx;
-  line-height: 36rpx;
-  border-radius: 999rpx;
-  background: #ef4444;
-  color: #fff;
-  font-size: 22rpx;
-  text-align: center;
-}
+.messages-page { background: #fff; }
+.page-heading { display: flex; align-items: center; justify-content: space-between; padding: 12rpx 4rpx 6rpx; }
+.unread-summary { padding: 8rpx 14rpx; border-radius: 8rpx; background: #ffebe9; color: #c83c32; font-size: 22rpx; }
+.conversation { position: relative; display: flex; align-items: flex-start; gap: 18rpx; min-height: 112rpx; padding: 22rpx 4rpx; border-bottom: 1rpx solid #ebeff2; }
+.conversation-icon { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 82rpx; height: 82rpx; border-radius: 16rpx; color: #fff; font-size: 25rpx; font-weight: 700; }
+.conversation-icon.blue { background: #1f6feb; }.conversation-icon.green { background: #0e7c66; }.conversation-icon.violet { background: #7557b8; }
+.conversation-main { min-width: 0; flex: 1; }
+.conversation-title-row { align-items: baseline; }
+.conversation-title { max-width: 470rpx; overflow: hidden; color: #1d2731; font-size: 29rpx; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-preview { max-width: 500rpx; margin-top: 5rpx; overflow: hidden; color: #667583; font-size: 25rpx; text-overflow: ellipsis; white-space: nowrap; }
+.conversation-meta { margin-top: 5rpx; color: #0e7c66; font-size: 21rpx; }
+.conversation > .badge { margin-top: 36rpx; }
+.private-actions { display: flex; gap: 22rpx; margin-top: 8rpx; }
+.action-link { color: #1f6feb; font-size: 23rpx; }
+.history-title { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 18rpx; margin: 34rpx 0 8rpx; color: #8b96a1; font-size: 22rpx; }
+.history-title text { height: 1rpx; background: #e4e9ed; }
+.conversation.history { opacity: .72; }

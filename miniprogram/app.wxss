@@ -1,9 +1,12 @@
 page {
-  background: #f5f7f6;
-  color: #17211f;
-  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", sans-serif;
+  background: #f4f6f8;
+  color: #17202a;
+  font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "PingFang SC", sans-serif;
   font-size: 28rpx;
+  line-height: 1.5;
 }
+
+button::after { border: 0; }
 
 .page {
   min-height: 100vh;
@@ -11,21 +14,9 @@ page {
   box-sizing: border-box;
 }
 
-.section-title {
-  margin: 28rpx 0 16rpx;
-  font-size: 34rpx;
-  font-weight: 700;
-}
+.page.with-footer { padding-bottom: 150rpx; }
 
-.card {
-  margin-bottom: 20rpx;
-  padding: 24rpx;
-  background: #ffffff;
-  border: 1rpx solid #e5ece9;
-  border-radius: 12rpx;
-  box-shadow: 0 4rpx 16rpx rgba(23, 107, 91, 0.06);
-}
-
+.section-header,
 .row {
   display: flex;
   align-items: center;
@@ -33,97 +24,144 @@ page {
   gap: 16rpx;
 }
 
-.card-title {
-  font-size: 30rpx;
-  font-weight: 700;
-  line-height: 1.35;
-}
+.section-header { margin: 34rpx 0 16rpx; }
+.section-title { font-size: 32rpx; font-weight: 700; }
+.section-link { color: #1f6feb; font-size: 24rpx; }
 
-.muted {
-  color: #66736f;
-  font-size: 24rpx;
-}
-
-.title {
-  font-size: 34rpx;
-  font-weight: 700;
-}
-
-.tag {
-  display: inline-block;
-  margin-right: 10rpx;
-  padding: 6rpx 12rpx;
-  border-radius: 999rpx;
-  background: #e8f3ef;
-  color: #176b5b;
-  font-size: 22rpx;
-}
-
-.primary-btn,
-.secondary-btn,
-.danger-btn {
-  height: 82rpx;
-  line-height: 82rpx;
-  border-radius: 12rpx;
-  font-size: 28rpx;
-}
-
-.primary-btn {
-  background: #176b5b;
-  color: #ffffff;
-}
-
-.secondary-btn {
-  background: #e8f3ef;
-  color: #176b5b;
-}
-
-.danger-btn {
-  background: #fff1ea;
-  color: #ba4a1c;
-}
-
-.input {
-  height: 84rpx;
+.card {
   margin-bottom: 18rpx;
-  padding: 0 22rpx;
-  background: #ffffff;
-  border: 1rpx solid #dce6e2;
-  border-radius: 12rpx;
+  padding: 24rpx;
+  background: #fff;
+  border: 1rpx solid #e2e7ec;
+  border-radius: 16rpx;
   box-sizing: border-box;
 }
 
-.textarea {
-  min-height: 150rpx;
-  padding: 20rpx 22rpx;
-}
+.card-title { font-size: 30rpx; font-weight: 700; line-height: 1.35; }
+.title { font-size: 36rpx; font-weight: 750; line-height: 1.3; }
+.subtitle { color: #44505c; font-size: 26rpx; }
+.muted { color: #70808f; font-size: 24rpx; }
+.caption { color: #8995a1; font-size: 22rpx; }
+.danger-text { color: #c83c32; }
+.success-text { color: #087f5b; }
+.price-text { color: #d94841; font-weight: 750; }
 
-.empty {
-  padding: 80rpx 20rpx;
-  color: #66736f;
-  text-align: center;
+.tag {
+  display: inline-block;
+  flex-shrink: 0;
+  padding: 5rpx 12rpx;
+  border-radius: 8rpx;
+  background: #eaf2ff;
+  color: #1f6feb;
+  font-size: 22rpx;
 }
+.tag.success { background: #e4f6ef; color: #087f5b; }
+.tag.warning { background: #fff4d6; color: #a05a00; }
+.tag.danger { background: #ffebe9; color: #c83c32; }
+.tag.neutral { background: #edf0f2; color: #53606c; }
+
+.primary-btn,
+.secondary-btn,
+.danger-btn,
+.text-btn {
+  height: 80rpx;
+  line-height: 80rpx;
+  margin: 0;
+  padding: 0 26rpx;
+  border-radius: 16rpx;
+  font-size: 27rpx;
+  font-weight: 600;
+  box-sizing: border-box;
+}
+.primary-btn { background: #1f6feb; color: #fff; }
+.secondary-btn { background: #eaf2ff; color: #1558b0; }
+.danger-btn { background: #d94841; color: #fff; }
+.text-btn { background: transparent; color: #1f6feb; padding: 0 12rpx; }
+.primary-btn[disabled], .secondary-btn[disabled] { opacity: .45; }
+.small-btn { height: 62rpx; line-height: 62rpx; padding: 0 20rpx; font-size: 24rpx; }
+.icon-btn { width: 72rpx; height: 72rpx; line-height: 72rpx; padding: 0; border-radius: 50%; text-align: center; }
+
+.input,
+.textarea,
+.picker-field {
+  width: 100%;
+  margin-bottom: 18rpx;
+  padding: 0 22rpx;
+  background: #fff;
+  border: 1rpx solid #d9e0e6;
+  border-radius: 14rpx;
+  box-sizing: border-box;
+  font-size: 28rpx;
+}
+.input, .picker-field { height: 84rpx; line-height: 84rpx; }
+.textarea { min-height: 180rpx; padding-top: 20rpx; }
+.field-label { display: block; margin: 20rpx 0 10rpx; color: #44505c; font-size: 25rpx; font-weight: 600; }
 
 .filter-bar {
   display: flex;
-  gap: 14rpx;
-  margin: 22rpx 0 6rpx;
+  gap: 8rpx;
+  margin: 18rpx 0;
+  padding: 6rpx;
+  background: #e9edf1;
+  border-radius: 14rpx;
 }
-
 .filter {
   flex: 1;
-  height: 64rpx;
-  line-height: 64rpx;
-  background: #ffffff;
-  border: 1rpx solid #dce6e2;
+  min-width: 0;
+  height: 62rpx;
+  line-height: 62rpx;
   border-radius: 10rpx;
-  color: #66736f;
+  color: #5d6975;
   text-align: center;
-  font-size: 25rpx;
+  font-size: 24rpx;
+}
+.filter.active { background: #fff; color: #17202a; font-weight: 650; box-shadow: 0 2rpx 8rpx rgba(23,32,42,.08); }
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34rpx;
+  height: 34rpx;
+  padding: 0 8rpx;
+  border-radius: 18rpx;
+  background: #d94841;
+  color: #fff;
+  font-size: 20rpx;
+  box-sizing: border-box;
 }
 
-.filter.active {
-  background: #176b5b;
-  border-color: #176b5b;
-  color: #ffffff;
+.avatar {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  background: #dce9ff;
+  color: #1558b0;
+  font-size: 30rpx;
+  font-weight: 700;
+}
+.avatar.small { width: 60rpx; height: 60rpx; font-size: 24rpx; }
+.avatar.large { width: 112rpx; height: 112rpx; font-size: 40rpx; }
+
+.progress { height: 14rpx; overflow: hidden; background: #e8ecef; border-radius: 7rpx; }
+.progress-inner { height: 100%; background: linear-gradient(90deg, #0e8a6d, #f59e0b, #d94841); border-radius: 7rpx; }
+
+.empty { padding: 90rpx 30rpx; color: #7b8793; text-align: center; }
+.divider { height: 1rpx; margin: 20rpx 0; background: #e7ebef; }
+.footer-actions {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  display: grid;
+  grid-template-columns: 1fr 2fr;
+  gap: 16rpx;
+  padding: 18rpx 24rpx calc(18rpx + env(safe-area-inset-bottom));
+  background: rgba(255,255,255,.96);
+  border-top: 1rpx solid #e1e6ea;
 }

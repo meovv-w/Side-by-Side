@@ -20,7 +20,7 @@ function fail(message) {
 
 async function getCurrentUser() {
   const { OPENID } = cloud.getWXContext();
-  const openid = OPENID || 'cloud-mock-openid';
+  const openid = OPENID || 'cloud-local-openid';
   const res = await db.collection('users').where({ openid }).limit(1).get();
   if (res.data.length > 0) return res.data[0];
 

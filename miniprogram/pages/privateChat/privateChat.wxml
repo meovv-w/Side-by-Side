@@ -1,0 +1,10 @@
+<view class="private-chat">
+  <view class="contact-bar" bindtap="profile"><view class="avatar small">{{target.avatarText || '同'}}</view><view><view class="contact-name">{{target.nickname}} · Lv.{{target.level}}</view><view class="relation">{{relationText}}{{remaining !== null ? ' · 剩余' + remaining + '条' : ''}}</view></view><text>›</text></view>
+  <scroll-view class="private-messages" scroll-y scroll-into-view="{{scrollTarget}}" scroll-with-animation>
+    <view class="privacy-tip">请勿在私信中发送身份证、银行卡等敏感信息</view>
+    <view wx:for="{{messages}}" wx:key="_id" id="{{item.anchor}}" class="private-row {{item.isMine ? 'mine' : ''}}"><view class="bubble">{{item.content}}</view><view class="caption">{{item.createdAt}}</view></view>
+  </scroll-view>
+  <view wx:if="{{blocked}}" class="blocked-bar"><text>你已屏蔽该用户</text><button class="text-btn small-btn" bindtap="block">解除黑名单</button></view>
+  <view wx:elif="{{!canSend}}" class="blocked-bar"><text>{{relationText}}</text><button class="primary-btn small-btn" bindtap="follow">关注</button></view>
+  <view wx:else class="private-composer"><button class="more" bindtap="block">•••</button><input placeholder="输入消息" value="{{content}}" bindinput="input" confirm-type="send" bindconfirm="send" /><button class="send" bindtap="send">发送</button></view>
+</view>

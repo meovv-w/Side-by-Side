@@ -1,19 +1,41 @@
-<view class="page">
-  <button class="primary-btn" bindtap="publish">发布行程</button>
+<view class="page trips-page">
+  <view wx:if="{{currentTrip}}" class="current-card" bindtap="openTrip" data-id="{{currentTrip._id}}">
+    <view class="current-head"><view class="live-dot"></view><text>当前行程</text><text class="current-status">{{currentTrip.stage === 'forming' ? '组队中' : '行进中'}}</text></view>
+    <view class="current-route">{{currentTrip.from}} → {{currentTrip.to}}</view>
+    <view class="current-meta">{{currentTrip.departAt}} · 预计 {{currentTrip.days}} 天 · {{currentTrip.seatJoined}}/{{currentTrip.seatTotal}} 车</view>
+    <view class="current-footer"><text>{{currentTrip.teamName}}</text><text>管理行程 ›</text></view>
+  </view>
+  <view wx:else class="empty-current">
+    <view><view class="card-title">还没设置行程</view><view class="muted">发布路线后即可匹配顺路车队</view></view>
+    <button class="primary-btn small-btn" bindtap="publish">发布行程</button>
+  </view>
+
+  <button wx:if="{{currentTrip}}" class="publish-button" bindtap="publish"><text class="publish-plus">＋</text> 发布新行程</button>
 
   <view class="filter-bar">
     <view wx:for="{{filters}}" wx:key="key" class="filter {{currentFilter === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeFilter">{{item.label}}</view>
   </view>
 
-  <view class="section-title">全部行程</view>
-  <view wx:if="{{trips.length === 0}}" class="empty">暂无行程</view>
-  <view wx:for="{{trips}}" wx:key="_id" class="card" bindtap="openTrip" data-id="{{item._id}}">
-    <view class="row">
-      <view class="card-title">{{item.title}}</view>
-      <text class="tag">{{item.statusText}}</text>
+  <view wx:if="{{trips.length === 0}}" class="empty">当前分类没有行程</view>
+  <view wx:for="{{trips}}" wx:key="_id" class="trip-card" bindtap="openTrip" data-id="{{item._id}}">
+    <view class="trip-head">
+      <view class="leader-avatar">{{item.avatarText}}</view>
+      <view class="trip-head-main">
+        <view class="trip-name">{{item.teamName || item.title}}</view>
+        <view class="muted">队长 {{item.ownerName}} · 信用 4.9</view>
+      </view>
+      <view class="match-rate">顺路率 <text>{{item.matchRate || 80}}%</text></view>
     </view>
-    <view>{{item.from}} -> {{item.to}}</view>
-    <view class="muted">{{item.departAt}}</view>
-    <view class="muted">车主 {{item.ownerName}} · {{item.seatJoined}}/{{item.seatTotal}} 人 · 人均 ¥{{item.priceShare}}</view>
+    <view class="trip-route">{{item.from}} → {{item.to}}</view>
+    <view class="trip-date">{{item.departAt}} · 预计 {{item.days || 1}} 天</view>
+    <view class="trip-info"><text>{{item.seatJoined}}/{{item.seatTotal}} 车已加入</text><text>{{item.depth}}同行</text><text>人均 ¥{{item.priceShare}}</text></view>
+    <view wx:if="{{item.plansText}}" class="trip-tags">{{item.plansText}}</view>
+    <view wx:if="{{item.equipmentText}}" class="equipment">保障：{{item.equipmentText}}</view>
+    <view class="trip-actions">
+      <button class="secondary-btn small-btn" catchtap="greet" data-owner="{{item.ownerId}}">先聊聊</button>
+      <button wx:if="{{!item.joined && item.requestStatus !== 'pending'}}" class="primary-btn small-btn" catchtap="apply" data-id="{{item._id}}">申请入队</button>
+      <button wx:elif="{{item.requestStatus === 'pending'}}" class="secondary-btn small-btn" disabled>等待队长审批</button>
+      <button wx:else class="primary-btn small-btn">查看行程</button>
+    </view>
   </view>
 </view>

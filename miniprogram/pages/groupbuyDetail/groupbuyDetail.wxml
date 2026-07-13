@@ -1,17 +1,33 @@
-<view class="page" wx:if="{{item}}">
-  <view class="card">
-    <view class="title">{{item.title}}</view>
-    <view class="muted">{{item.merchantName}}</view>
-    <view class="price-row">
-      <text class="price">¥{{item.price}}</text>
-      <text class="origin">¥{{item.originPrice}}</text>
+<view class="detail-page with-footer" wx:if="{{item}}">
+  <view class="product-visual"><view class="visual-category">{{item.category}}</view><view class="visual-title">{{item.title}}</view><view class="visual-sub">沿途好物 · 到店核销</view></view>
+  <view class="content">
+    <view class="deal-summary">
+      <view class="price-row"><text class="price">¥{{item.currentPrice}}</text><text class="origin">¥{{item.originPrice}}</text><text class="save">已省 {{item.saved}} 元</text></view>
+      <view class="title">{{item.title}}</view><view class="merchant" bindtap="navigate">{{item.merchantName}} · {{item.distanceKm}}km · 评分 {{item.rating}} ›</view>
     </view>
-    <view class="muted">{{item.joined}}/{{item.minPeople}} 人 · 还差 {{item.remain}} 人 · 截止 {{item.validUntil}}</view>
-    <view class="progress">
-      <view class="progress-inner" style="width: {{item.progress}}%;"></view>
+    <view class="countdown-row"><text>距拼团结束</text><text>{{countdown}}</text></view>
+
+    <view class="card progress-card">
+      <view class="row"><view class="card-title">已拼 {{item.joined}} 人</view><view class="price-text">还差 {{item.remain}} 人到目标</view></view>
+      <view class="progress"><view class="progress-inner" style="width: {{item.progress}}%"></view></view>
+      <view class="avatars"><view wx:for="{{item.participantAvatars}}" wx:key="name" class="avatar small">{{item.text}}</view><view class="avatar small more">+{{item.remain}}</view></view>
     </view>
-    <view class="desc">{{item.description}}</view>
+
+    <view class="card"><view class="section-title">人越多，价格越低</view><view wx:for="{{item.tiers}}" wx:key="people" class="tier {{item.reached ? 'reached' : ''}}"><view><text class="tier-people">{{item.people}}人</text><text wx:if="{{item.reached}}" class="tag success">已解锁</text></view><view><text class="tier-price">¥{{item.price}}</text><text class="tier-save">省 {{item.save}} 元</text></view></view></view>
+    <view class="card"><view class="section-title">使用说明</view><view class="description">{{item.description}}</view><view class="rule"><text>1</text><view>支付成功后生成 6 位核销码</view></view><view class="rule"><text>2</text><view>到店向商家出示核销码</view></view><view class="rule"><text>3</text><view>核销前可在订单页申请退款</view></view></view>
   </view>
-  <button class="primary-btn" bindtap="pay">模拟支付</button>
+
+  <view class="footer-actions deal-footer"><button class="secondary-btn" bindtap="shareTeam">发到车队群</button><button class="primary-btn buy-button" bindtap="openCheckout">立即参团 · ¥{{item.currentPrice}}</button></view>
+
+  <view wx:if="{{checkoutOpen}}" class="mask" bindtap="closeCheckout"></view>
+  <view wx:if="{{checkoutOpen}}" class="checkout-sheet">
+    <view class="row"><view class="title">确认订单</view><button class="close" bindtap="closeCheckout">×</button></view>
+    <view class="checkout-product"><view><view class="card-title">{{item.title}}</view><view class="muted">{{item.merchantName}}</view></view><view class="price-text">¥{{item.currentPrice}}</view></view>
+    <view class="section-header"><view class="section-title">优惠券</view><view class="muted">{{item.coupons.length}} 张可用</view></view>
+    <view class="coupon-choice {{selectedCouponId === '' ? 'selected' : ''}}" data-id="" bindtap="selectCoupon"><text>不使用优惠券</text><text>{{selectedCouponId === '' ? '✓' : ''}}</text></view>
+    <view wx:for="{{item.coupons}}" wx:key="_id" class="coupon-choice {{selectedCouponId === item._id ? 'selected' : ''}}" data-id="{{item._id}}" bindtap="selectCoupon"><view><view>{{item.title}}</view><view class="caption">满{{item.threshold}}减{{item.amount}}</view></view><view class="coupon-amount">-¥{{item.amount}} {{selectedCouponId === item._id ? '✓' : ''}}</view></view>
+    <view class="pay-summary"><view><text>商品金额</text><text>¥{{item.currentPrice}}</text></view><view><text>优惠</text><text>-¥{{selectedCoupon ? selectedCoupon.amount : 0}}</text></view><view class="pay-total"><text>实付</text><text>¥{{payable}}</text></view></view>
+    <button class="primary-btn pay-button" bindtap="pay">确认支付 ¥{{payable}}</button>
+  </view>
 </view>
-<view wx:else class="empty">加载中</view>
+<view wx:else class="empty">正在加载拼团</view>

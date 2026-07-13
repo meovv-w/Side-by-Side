@@ -2,14 +2,85 @@ const api = require('../../utils/api');
 
 Page({
   data: {
+    id: '',
+    step: 1,
+    depthOptions: ['浅度', '中度', '深度'],
+    depthIndex: 1,
+    planOptions: [
+      { key: 'AA住宿', label: 'AA住宿', checked: true },
+      { key: '拼桌', label: '拼桌吃饭', checked: false },
+      { key: '同逛', label: '一起游览', checked: false },
+      { key: '拍照', label: '沿途拍照', checked: true },
+      { key: '互助', label: '车辆互助', checked: true }
+    ],
     form: {
       from: '',
       to: '',
-      departAt: '2026-07-04 08:30',
-      seatTotal: '3',
-      priceShare: '50',
+      waypointsText: '',
+      title: '',
+      teamName: '',
+      departDate: '2026-07-20',
+      departTime: '08:30',
+      days: '3',
+      dailyKm: '260',
+      seatTotal: '4',
+      priceShare: '80',
+      depth: '中度',
+      privacy: 'public',
+      discoverable: true,
       note: ''
+    },
+    route: [
+      { latitude: 30.2741, longitude: 120.1551 },
+      { latitude: 29.6097, longitude: 119.0419 }
+    ],
+    polyline: [],
+    markers: []
+  },
+
+  onLoad(options) {
+    if (options.id) {
+      this.setData({ id: options.id });
+      api.getTrip(options.id).then(res => {
+        if (!res.ok || !res.data.owned) return;
+        const trip = res.data.trip;
+        const parts = `${trip.departAt || ''}`.split(' ');
+        const depthIndex = Math.max(0, this.data.depthOptions.indexOf(trip.depth));
+        const planOptions = this.data.planOptions.map(item => ({ ...item, checked: (trip.plans || []).includes(item.key) }));
+        this.setData({
+          depthIndex,
+          planOptions,
+          form: {
+            from: trip.from,
+            to: trip.to,
+            waypointsText: (trip.waypoints || []).join('、'),
+            title: trip.title,
+            teamName: trip.teamName,
+            departDate: parts[0] || '2026-07-20',
+            departTime: parts[1] || '08:30',
+            days: `${trip.days || 1}`,
+            dailyKm: `${trip.dailyKm || 200}`,
+            seatTotal: `${trip.seatTotal || 4}`,
+            priceShare: `${trip.priceShare || 0}`,
+            depth: trip.depth || '中度',
+            privacy: trip.privacy || 'public',
+            discoverable: trip.discoverable !== false,
+            note: trip.note || ''
+          },
+          route: trip.route || this.data.route
+        }, this.buildRouteMarkers);
+      });
+    } else {
+      this.buildRouteMarkers();
     }
+  },
+
+  buildRouteMarkers() {
+    const route = this.data.route;
+    this.setData({ polyline: [{ points: route, color: '#1F6FEB', width: 6 }], markers: [
+      { id: 1, latitude: route[0].latitude, longitude: route[0].longitude, iconPath: '/images/markers/default.png', width: 30, height: 30, callout: { content: '起点', display: 'ALWAYS', padding: 5, borderRadius: 4 } },
+      { id: 2, latitude: route[route.length - 1].latitude, longitude: route[route.length - 1].longitude, iconPath: '/images/markers/default.png', width: 30, height: 30, callout: { content: '终点', display: 'ALWAYS', padding: 5, borderRadius: 4 } }
+    ] });
   },
 
   onInput(event) {
@@ -17,21 +88,56 @@ Page({
     this.setData({ [`form.${field}`]: event.detail.value });
   },
 
+  onDate(event) {
+    this.setData({ 'form.departDate': event.detail.value });
+  },
+
+  onTime(event) {
+    this.setData({ 'form.departTime': event.detail.value });
+  },
+
+  onDepth(event) {
+    const depthIndex = Number(event.detail.value);
+    this.setData({ depthIndex, 'form.depth': this.data.depthOptions[depthIndex] });
+  },
+
+  onPrivacy(event) {
+    this.setData({ 'form.privacy': event.detail.value ? 'public' : 'private' });
+  },
+
+  onDiscoverable(event) {
+    this.setData({ 'form.discoverable': event.detail.value });
+  },
+
+  togglePlan(event) {
+    const key = event.currentTarget.dataset.key;
+    this.setData({ planOptions: this.data.planOptions.map(item => item.key === key ? { ...item, checked: !item.checked } : item) });
+  },
+
+  next() {
+    const form = this.data.form;
+    if (this.data.step === 1 && (!form.from || !form.to)) return wx.showToast({ title: '请填写起点和终点', icon: 'none' });
+    if (this.data.step === 2 && (!form.title || !form.teamName || Number(form.seatTotal) < 1 || Number(form.seatTotal) > 20)) return wx.showToast({ title: '请补全行程信息，车队上限为1-20辆', icon: 'none' });
+    this.setData({ step: Math.min(3, this.data.step + 1) });
+  },
+
+  previous() {
+    this.setData({ step: Math.max(1, this.data.step - 1) });
+  },
+
   submit() {
     const form = this.data.form;
-    if (!form.from || !form.to || !form.departAt) {
-      wx.showToast({ title: '请补全信息', icon: 'none' });
-      return;
-    }
-    if (Number(form.seatTotal) < 1 || Number(form.priceShare) < 0) {
-      wx.showToast({ title: '人数或费用不正确', icon: 'none' });
-      return;
-    }
-    api.createTrip(form).then(res => {
-      if (!res.ok) {
-        wx.showToast({ title: res.message || '发布失败', icon: 'none' });
-        return;
-      }
+    const payload = {
+      ...form,
+      departAt: `${form.departDate} ${form.departTime}`,
+      waypoints: form.waypointsText.split(/[、,，]/).map(item => item.trim()).filter(Boolean).slice(0, 5),
+      plans: this.data.planOptions.filter(item => item.checked).map(item => item.key),
+      equipment: ['应急药箱', '对讲机']
+    };
+    const action = this.data.id ? api.updateTrip(this.data.id, payload) : api.createTrip(payload);
+    action.then(res => {
+      if (!res.ok) return wx.showToast({ title: res.message || '保存失败', icon: 'none' });
+      wx.showToast({ title: this.data.id ? '行程已更新' : '行程已发布' });
       wx.redirectTo({ url: `/pages/tripDetail/tripDetail?id=${res.data._id}` });
     });
   }

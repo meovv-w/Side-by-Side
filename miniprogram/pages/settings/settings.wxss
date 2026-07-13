@@ -1,0 +1,1 @@
+.field-grid{display:grid;grid-template-columns:1fr 1fr;gap:14rpx}.textarea.small{min-height:120rpx}.cert-row,.setting-row{display:flex;align-items:center;justify-content:space-between;min-height:98rpx;padding:8rpx 0;border-bottom:1rpx solid #e5eaee}.save{width:100%;margin-top:28rpx}.reset{width:100%;margin-top:14rpx;background:transparent;color:#c83c32;font-size:24rpx}

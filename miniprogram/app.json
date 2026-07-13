@@ -15,8 +15,15 @@
     "pages/groupbuyList/groupbuyList",
     "pages/groupbuyDetail/groupbuyDetail",
     "pages/orders/orders",
+    "pages/orderDetail/orderDetail",
     "pages/mine/mine",
-    "pages/login/login"
+    "pages/login/login",
+    "pages/privateChat/privateChat",
+    "pages/userProfile/userProfile",
+    "pages/social/social",
+    "pages/settings/settings",
+    "pages/badges/badges",
+    "pages/createPoiChat/createPoiChat"
   ],
   "window": {
     "navigationBarTitleText": "同路行",
@@ -32,19 +39,27 @@
     "list": [
       {
         "pagePath": "pages/index/index",
-        "text": "地图"
+        "text": "地图",
+        "iconPath": "images/tabbar/map.png",
+        "selectedIconPath": "images/tabbar/map_active.png"
       },
       {
         "pagePath": "pages/messages/messages",
-        "text": "消息"
+        "text": "消息",
+        "iconPath": "images/tabbar/msg.png",
+        "selectedIconPath": "images/tabbar/msg_active.png"
       },
       {
         "pagePath": "pages/trips/trips",
-        "text": "行程"
+        "text": "行程",
+        "iconPath": "images/tabbar/trip.png",
+        "selectedIconPath": "images/tabbar/trip_active.png"
       },
       {
         "pagePath": "pages/mine/mine",
-        "text": "我的"
+        "text": "我的",
+        "iconPath": "images/tabbar/mine.png",
+        "selectedIconPath": "images/tabbar/mine_active.png"
       }
     ]
   },
@@ -56,6 +71,7 @@
     }
   },
   "requiredPrivateInfos": [
-    "getLocation"
+    "getLocation",
+    "chooseLocation"
   ]
 }

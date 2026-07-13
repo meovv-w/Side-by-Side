@@ -1,0 +1,10 @@
+<view class="profile-page" wx:if="{{user._id}}">
+  <view class="profile-cover"><view class="avatar profile-avatar">{{avatarText}}</view><view class="profile-name">{{user.nickname}}</view><view class="profile-bio">{{user.bio}}</view><view class="profile-tags"><text class="tag success">{{user.ownerCertStatus === 'approved' ? '车主已认证' : '认证中'}}</text><text class="tag">Lv.{{user.level}}</text><text class="tag warning">信用 {{user.creditScore}}</text></view></view>
+  <view class="profile-stats"><view><text>{{user.distanceKm || 0}}</text><label>自驾公里</label></view><view><text>{{user.teamCount || 0}}</text><label>同队车辆</label></view><view><text>{{user.followerCount || 0}}</text><label>关注者</label></view><view><text>{{user.companionCount || 0}}</text><label>同行次数</label></view></view>
+  <view class="page profile-content">
+    <view class="card vehicle-card"><view class="section-title">车辆信息</view><view class="vehicle-row"><view class="vehicle-icon">车</view><view><view class="card-title">{{user.vehicleModel || '未填写车型'}}</view><view class="muted">{{user.vehicleNo || '未填写车牌'}} · 车主认证 {{user.ownerCertStatus}}</view></view></view></view>
+    <view class="section-header"><view class="section-title">获得勋章</view></view><view class="badge-row"><view wx:for="{{user.badges}}" wx:key="*this"><view class="medal">章</view><text>{{item}}</text></view></view>
+    <view class="section-header"><view class="section-title">同行记录</view><view class="muted">{{trips.length}} 条</view></view><view wx:for="{{trips}}" wx:key="_id" class="card trip-row" data-id="{{item._id}}" bindtap="openTrip"><view><view class="card-title">{{item.from}} → {{item.to}}</view><view class="muted">{{item.departAt}} · {{item.teamName}}</view></view><text>›</text></view>
+  </view>
+  <view class="profile-footer"><button wx:if="{{self}}" class="primary-btn" bindtap="edit">编辑个人资料</button><block wx:else><button class="secondary-btn" bindtap="follow">{{following ? '取消关注' : '关注'}}</button><button class="primary-btn" bindtap="message">发私信</button></block></view>
+</view>
