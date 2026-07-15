@@ -3,7 +3,7 @@
 .unread-summary { padding: 8rpx 14rpx; border-radius: 8rpx; background: #ffebe9; color: #c83c32; font-size: 22rpx; }
 .conversation { position: relative; display: flex; align-items: flex-start; gap: 18rpx; min-height: 112rpx; padding: 22rpx 4rpx; border-bottom: 1rpx solid #ebeff2; }
 .conversation-icon { display: flex; flex-shrink: 0; align-items: center; justify-content: center; width: 82rpx; height: 82rpx; border-radius: 16rpx; color: #fff; font-size: 25rpx; font-weight: 700; }
-.conversation-icon.blue { background: #1f6feb; }.conversation-icon.green { background: #0e7c66; }.conversation-icon.violet { background: #7557b8; }
+.conversation-icon.blue { background: #1f6feb; }.conversation-icon.green { background: #0e7c66; }.conversation-icon.violet { background: #7557b8; }.conversation-icon.amber { background: #a76408; }
 .conversation-main { min-width: 0; flex: 1; }
 .conversation-title-row { align-items: baseline; }
 .conversation-title { max-width: 470rpx; overflow: hidden; color: #1d2731; font-size: 29rpx; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }

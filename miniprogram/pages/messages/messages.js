@@ -3,7 +3,8 @@ const api = require('../../utils/api');
 const labels = {
   team: { icon: '车', color: 'blue' },
   poi: { icon: '地', color: 'green' },
-  private: { icon: '私', color: 'violet' }
+  private: { icon: '私', color: 'violet' },
+  system: { icon: '通', color: 'amber' }
 };
 
 Page({
@@ -20,6 +21,16 @@ Page({
     unreadCount: 0
   },
 
+  onLoad() {
+    this.unsubscribeRealtime = api.subscribeRealtime(event => {
+      if (event.event === 'message' || event.event === 'notification') this.load();
+    });
+  },
+
+  onUnload() {
+    if (this.unsubscribeRealtime) this.unsubscribeRealtime();
+  },
+
   onShow() {
     this.load();
   },
@@ -33,6 +44,7 @@ Page({
         history: all.filter(item => item.archived),
         unreadCount: all.reduce((sum, item) => sum + Number(item.unread || 0), 0)
       });
+      wx.removeTabBarBadge({ index: 1 });
     });
   },
 
@@ -46,7 +58,28 @@ Page({
     api.markConversationRead(item.targetId, item.type).then(() => {
       if (item.type === 'team') wx.navigateTo({ url: `/pages/chatGroup/chatGroup?id=${item.targetId}` });
       else if (item.type === 'poi') wx.navigateTo({ url: `/pages/poiChat/poiChat?id=${item.targetId}` });
+      else if (item.type === 'system') this.openNotification(item);
       else wx.navigateTo({ url: `/pages/privateChat/privateChat?id=${item.targetId}` });
+    });
+  },
+
+  openNotification(item) {
+    const data = item.data || {};
+    if (data.orderId) return wx.navigateTo({ url: `/pages/orderDetail/orderDetail?id=${data.orderId}` });
+    if (data.tripId) return wx.navigateTo({ url: `/pages/tripDetail/tripDetail?id=${data.tripId}` });
+    if (item.notificationType === 'certification') return wx.navigateTo({ url: '/pages/certify/certify' });
+    wx.showModal({ title: item.title, content: item.lastMessage, showCancel: false });
+  },
+
+  replyPrivate(event) {
+    wx.navigateTo({ url: `/pages/privateChat/privateChat?id=${event.currentTarget.dataset.user}` });
+  },
+
+  ignore(event) {
+    const userId = event.currentTarget.dataset.user;
+    api.markConversationRead(userId, 'private').then(() => {
+      wx.showToast({ title: '已忽略并标为已读' });
+      this.load();
     });
   },
 

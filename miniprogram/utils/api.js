@@ -1,4 +1,5 @@
 const store = require('./mockStore');
+const remote = require('./remoteApi');
 
 // Local product mode keeps every interaction persistent on the device. Switch this
 // on only after the matching cloud actions and database permissions are deployed.
@@ -67,6 +68,8 @@ function getHome() {
     mapLayers: db.map_layers || [],
     poiChats: db.poi_chats || [],
     settings: (db.user_settings || {})[user._id] || {},
+    weather: { altitude: 83, text: '晴', temperature: 22 },
+    energyReminder: { message: '距你约 12.6km 有富阳服务区充电站' },
     stats: {
       tripCount: db.trips.length,
       joinedTripCount: memberTripIds.length,
@@ -77,18 +80,24 @@ function getHome() {
   });
 }
 
-function listTrips() {
+function listTrips(sort = 'match') {
   if (useCloud) return callCloud('trip', { action: 'list' });
   const db = store.getStore();
   const user = getCurrentUser(db);
   const memberTripIds = (db.trip_members || []).filter(item => item.userId === user._id).map(item => item.tripId);
   const requests = db.trip_requests || [];
-  return ok(db.trips.map(item => ({
+  const rows = db.trips.map(item => ({
     ...item,
     joined: memberTripIds.includes(item._id),
     owned: item.ownerId === user._id,
     requestStatus: (requests.find(request => request.tripId === item._id && request.userId === user._id) || {}).status || 'none'
-  })).sort((a, b) => Number(b.matchRate || 0) - Number(a.matchRate || 0)));
+  }));
+  rows.sort((first, second) => sort === 'time'
+    ? new Date(String(first.departAt).replace(/-/g, '/')) - new Date(String(second.departAt).replace(/-/g, '/'))
+    : sort === 'distance'
+      ? Number(first.distanceKm == null ? Infinity : first.distanceKm) - Number(second.distanceKm == null ? Infinity : second.distanceKm)
+      : Number(second.matchRate || 0) - Number(first.matchRate || 0));
+  return ok(rows);
 }
 
 function getTrip(tripId) {
@@ -96,7 +105,8 @@ function getTrip(tripId) {
   const db = store.getStore();
   const trip = db.trips.find(item => item._id === tripId);
   if (!trip) return fail('行程不存在');
-  const members = (db.trip_members || []).filter(item => item.tripId === tripId).map(item => ({
+  const tripMembers = (db.trip_members || []).filter(item => item.tripId === tripId);
+  const members = tripMembers.filter(item => ['active', 'leave_pending'].includes(item.status || 'active')).map(item => ({
     ...item,
     user: getUserById(db, item.userId) || {}
   }));
@@ -106,6 +116,7 @@ function getTrip(tripId) {
     trip,
     members,
     requests: (db.trip_requests || []).filter(item => item.tripId === tripId && item.status === 'pending'),
+    leaveRequests: trip.ownerId === user._id ? tripMembers.filter(item => item.status === 'leave_pending').map(item => ({ ...item, user: getUserById(db, item.userId) || {} })) : [],
     joined: members.some(item => item.userId === user._id),
     owned: trip.ownerId === user._id,
     requestStatus: request ? request.status : 'none'
@@ -272,8 +283,14 @@ function leaveTrip(tripId) {
   const trip = db.trips.find(item => item._id === tripId);
   if (!trip) return fail('行程不存在');
   if (trip.ownerId === user._id) return fail('队长需先结束行程，不能直接退出');
-  const index = (db.trip_members || []).findIndex(item => item.tripId === tripId && item.userId === user._id);
+  const index = (db.trip_members || []).findIndex(item => item.tripId === tripId && item.userId === user._id && ['active', 'leave_pending'].includes(item.status || 'active'));
   if (index < 0) return fail('你不在该车队中');
+  if (['departed', 'driving'].includes(trip.stage)) {
+    db.trip_members[index].status = 'leave_pending';
+    db.trip_members[index].leaveReason = '用户主动退出';
+    store.saveStore(db);
+    return ok(db.trip_members[index]);
+  }
   db.trip_members.splice(index, 1);
   trip.teammates = (trip.teammates || []).filter(item => item.userId !== user._id);
   trip.seatJoined = Math.max(1, Number(trip.seatJoined || 1) - 1);
@@ -282,17 +299,59 @@ function leaveTrip(tripId) {
   return ok(trip);
 }
 
-function endTrip(tripId) {
+function reviewTripLeave(memberId, approved) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const member = (db.trip_members || []).find(item => item._id === memberId && item.status === 'leave_pending');
+  if (!member) return fail('待处理退出申请不存在');
+  const trip = db.trips.find(item => item._id === member.tripId);
+  if (!trip || trip.ownerId !== user._id) return fail('只有队长可以处理退出申请');
+  if (!approved) {
+    member.status = 'active'; member.leaveReason = ''; store.saveStore(db); return ok(member);
+  }
+  return removeTripMember(trip._id, memberId, member.leaveReason || '退出申请已批准');
+}
+
+function removeTripMember(tripId, memberId) {
   const db = store.getStore();
   const user = getCurrentUser(db);
   const trip = db.trips.find(item => item._id === tripId);
-  if (!trip) return fail('行程不存在');
-  if (trip.ownerId !== user._id) return fail('只有队长可以结束行程');
-  trip.status = 'done';
-  trip.stage = 'completed';
-  trip.completedAt = store.currentTime();
+  if (!trip || trip.ownerId !== user._id) return fail('只有队长可以移除成员');
+  const index = (db.trip_members || []).findIndex(item => item._id === memberId && item.tripId === tripId && item.role !== 'owner');
+  if (index < 0) return fail('车队成员不存在');
+  const member = db.trip_members[index];
+  db.trip_members.splice(index, 1);
+  trip.teammates = (trip.teammates || []).filter(item => item.userId !== member.userId);
+  trip.seatJoined = Math.max(1, Number(trip.seatJoined || 1) - 1);
+  if (trip.status === 'full') trip.status = 'open';
+  store.saveStore(db);
+  return ok(member);
+}
+
+function updateTripState(tripId, action) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const trip = db.trips.find(item => item._id === tripId);
+  if (!trip || trip.ownerId !== user._id) return fail('只有队长可以更新行程状态');
+  const transitions = {
+    depart: { from: 'forming', stage: 'departed', status: 'open' },
+    drive: { from: 'departed', stage: 'driving', status: 'open' },
+    complete: { from: ['departed', 'driving'], stage: 'completed', status: 'done' },
+    cancel: { from: 'forming', stage: 'completed', status: 'done' }
+  };
+  const next = transitions[action];
+  const allowed = next && (Array.isArray(next.from) ? next.from.includes(trip.stage) : next.from === trip.stage);
+  if (!allowed) return fail('当前行程状态不支持该操作');
+  trip.stage = next.stage; trip.status = next.status;
+  if (next.stage === 'completed') trip.completedAt = store.currentTime();
   store.saveStore(db);
   return ok(trip);
+}
+
+function endTrip(tripId) {
+  const trip = store.getStore().trips.find(item => item._id === tripId);
+  if (!trip) return fail('行程不存在');
+  return updateTripState(tripId, trip.stage === 'forming' ? 'cancel' : 'complete');
 }
 
 function listMessages(tripId) {
@@ -303,19 +362,30 @@ function listMessages(tripId) {
 
 function listConversations(type) {
   const db = store.getStore();
-  const items = db.conversations || [];
-  return ok((type && type !== 'all' ? items.filter(item => item.type === type) : items).slice().sort((a, b) => Number(b.unread || 0) - Number(a.unread || 0)));
+  const items = (db.conversations || []).slice();
+  if (!type || type === 'all') for (const item of db.notifications || []) items.push({
+    _id: `notification:${item._id}`, type: 'system', notificationType: item.type, targetId: item._id, title: item.title,
+    lastMessage: item.content, time: item.createdAt, unread: item.read ? 0 : 1,
+    meta: item.priority === 'high' ? '重要通知' : '系统通知', data: item.data || {}
+  });
+  return ok((type && type !== 'all' ? items.filter(item => item.type === type) : items).sort((a, b) => Number(b.unread || 0) - Number(a.unread || 0)));
 }
 
 function markConversationRead(targetId, type) {
   const db = store.getStore();
+  if (type === 'system') {
+    const notification = (db.notifications || []).find(item => item._id === targetId);
+    if (notification) notification.read = true;
+    store.saveStore(db);
+    return ok(notification || null);
+  }
   const conversation = (db.conversations || []).find(item => item.targetId === targetId && (!type || item.type === type));
   if (conversation) conversation.unread = 0;
   store.saveStore(db);
   return ok(conversation || null);
 }
 
-function sendMessage(tripId, content, type = 'text') {
+function sendMessage(tripId, content, type = 'text', options = {}) {
   if (useCloud) return callCloud('chat', { action: 'send', tripId, content, type });
   const text = `${content || ''}`.trim();
   if (!text) return fail('消息不能为空');
@@ -323,19 +393,23 @@ function sendMessage(tripId, content, type = 'text') {
   const user = getCurrentUser(db);
   const isMember = (db.trip_members || []).some(item => item.tripId === tripId && item.userId === user._id);
   if (!isMember) return fail('加入车队后才能发言');
+  const displayContent = type === 'voice' ? '语音消息' : text;
   const message = {
     _id: store.id('msg'),
     tripId,
     userId: user._id,
     nickname: user.nickname,
     type,
-    content: text,
+    content: displayContent,
+    mediaUrl: type === 'voice' ? text : '',
+    duration: Number(options.duration || 0),
     createdAt: store.currentTime()
   };
   db.messages.push(message);
   const conversation = (db.conversations || []).find(item => item.type === 'team' && item.targetId === tripId);
   if (conversation) {
-    conversation.lastMessage = `${user.nickname}：${text}`;
+    const summary = type === 'voice' ? '[语音]' : type === 'image' ? '[图片]' : displayContent;
+    conversation.lastMessage = `${user.nickname}：${summary}`;
     conversation.time = '刚刚';
     conversation.unread = 0;
   }
@@ -345,6 +419,10 @@ function sendMessage(tripId, content, type = 'text') {
 
 function shareLocation(tripId) {
   return sendMessage(tripId, '已共享位置：西湖文化广场东门', 'location');
+}
+
+function sharePresence() {
+  return ok({ status: 'visible', expiresInMinutes: 60 });
 }
 
 function getPrivateChat(userId) {
@@ -494,6 +572,29 @@ function getGroupbuy(groupbuyId) {
   return ok({ ...item, currentPrice: getTierPrice(item, nextPeople), coupons: eligibleCoupons(db, item, getCurrentUser(db)) });
 }
 
+function getMerchant(merchantId) {
+  const db = store.getStore();
+  const merchant = (db.merchants || []).find(item => item._id === merchantId);
+  if (!merchant) return fail('商家不存在');
+  return ok({ ...merchant, groupbuys: (db.groupbuys || []).filter(item => item.merchantId === merchantId) });
+}
+
+function createGroupbuySession(productId, options = {}) {
+  const db = store.getStore();
+  const template = (db.groupbuys || []).find(item => item.productId === productId || item._id === productId);
+  if (!template) return fail('拼团商品不存在');
+  const firstTarget = (template.tiers || []).find(item => Number(item.people) > 1);
+  const targetPeople = Number(options.targetPeople || (firstTarget && firstTarget.people) || 3);
+  const session = {
+    ...template, _id: store.id('gb'), productId: template.productId || productId,
+    targetPeople, joined: 0, participants: [], currentPrice: Number(template.originPrice), price: Number(template.originPrice),
+    validUntil: new Date(Date.now() + 24 * 3600000).toISOString().replace('T', ' ').slice(0, 19), status: 'forming', createdAt: store.currentTime()
+  };
+  db.groupbuys.unshift(session);
+  store.saveStore(db);
+  return ok(session);
+}
+
 function eligibleCoupons(db, groupbuy, user) {
   const price = getTierPrice(groupbuy, Number(groupbuy.joined || 0) + 1);
   return (db.coupons || []).filter(coupon => {
@@ -621,6 +722,19 @@ function getUserProfile(userId) {
   return ok({ user, relation, following, trips });
 }
 
+function getBadgeWall() {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const owned = new Set(user.badges || []);
+  const catalog = [
+    { _id: 'reliable', name: '可靠队友', desc: '完成3次同行且信用分不低于4.5' },
+    { _id: 'safety', name: '安全先锋', desc: '完成一次经运营确认的安全上报' },
+    { _id: 'captain', name: '五星队长', desc: '持续带队并保持良好信用' },
+    { _id: 'groupbuy', name: '拼团召集人', desc: '成功发起并完成5次拼团' }
+  ];
+  return ok(catalog.map(item => ({ ...item, owned: owned.has(item.name), awardedAt: owned.has(item.name) ? store.currentTime() : '' })));
+}
+
 function toggleFollow(targetType, targetId) {
   const db = store.getStore();
   const user = getCurrentUser(db);
@@ -691,6 +805,7 @@ function listInvites() {
   const db = store.getStore();
   const user = getCurrentUser(db);
   const records = (db.invites || []).filter(item => item.inviterId === user._id);
+  const createdAt = new Date(String(user.createdAt || '').replace(/-/g, '/')).getTime();
   return ok({
     inviteCode: user.inviteCode || 'TD0000',
     sharePath: `/pages/login/login?inviter=${user._id}`,
@@ -699,8 +814,22 @@ function listInvites() {
       { target: 1, title: '邀请首位好友', reward: '10同路值', reached: records.length >= 1 },
       { target: 3, title: '邀请3位好友', reward: '20元平台券', reached: records.length >= 3 },
       { target: 5, title: '邀请5位好友', reward: '限定勋章', reached: records.length >= 5 }
-    ]
+    ],
+    canBindInviter: !user.invitedBy && Number.isFinite(createdAt) && Date.now() - createdAt <= 7 * 86400000
   });
+}
+
+function bindInviterByPhone(phone) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  if (user.invitedBy) return fail('邀请关系已经绑定，不能修改');
+  const inviter = (db.users || []).find(item => item.phone === String(phone || '') && item._id !== user._id);
+  if (!inviter) return fail('未找到可绑定的邀请人');
+  user.invitedBy = inviter._id;
+  db.invites = db.invites || [];
+  db.invites.unshift({ _id: store.id('invite'), inviterId: inviter._id, inviteeId: user._id, inviteeName: user.nickname, source: 'phone_fallback', status: 'registered', createdAt: store.currentTime() });
+  store.saveStore(db);
+  return ok({ inviterId: inviter._id });
 }
 
 function createNextTrip(payload) {
@@ -711,6 +840,25 @@ function createNextTrip(payload) {
   db.next_trips.unshift(draft);
   store.saveStore(db);
   return ok(draft);
+}
+
+function matchNextTrip(draftId) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const draft = (db.next_trips || []).find(item => item._id === draftId && item.userId === user._id && item.status === 'draft');
+  if (!draft) return fail('行程草稿不存在');
+  const normalized = value => String(value || '').replace(/[市区县\s]/g, '');
+  const matches = (db.trips || []).filter(trip => {
+    if (trip.ownerId === user._id || trip.status !== 'open') return false;
+    const first = trip.route && trip.route[0];
+    const startMatches = normalized(trip.from).includes(normalized(draft.from)) || normalized(draft.from).includes(normalized(trip.from));
+    const endMatches = normalized(trip.to).includes(normalized(draft.to)) || normalized(draft.to).includes(normalized(trip.to));
+    if (!first) return startMatches && endMatches;
+    const draftTrip = (db.trips || []).find(item => item.from === draft.from && item.to === draft.to && item.route && item.route[0]);
+    if (!draftTrip) return startMatches && endMatches;
+    return localDistance(first, draftTrip.route[0]) <= 10000;
+  }).sort((first, second) => Number(second.matchRate || 0) - Number(first.matchRate || 0)).slice(0, 10);
+  return ok(matches);
 }
 
 async function publishNextTrip(draftId) {
@@ -770,10 +918,27 @@ function recordEmergency(payload = {}) {
   const user = getCurrentUser(db);
   const event = {
     _id: store.id('sos'), userId: user._id, userName: user.nickname, tripId: payload.tripId || '',
-    location: payload.location || '西湖文化广场东门', status: 'notified', createdAt: store.currentTime()
+    location: payload.location || '西湖文化广场东门', status: 'notified', contactsNotified: true, teamNotified: true, createdAt: store.currentTime()
   };
   db.emergency_events = db.emergency_events || [];
   db.emergency_events.unshift(event);
+  store.saveStore(db);
+  return ok(event);
+}
+
+function reportSafetyEvent(payload = {}) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const titles = { accident: '交通事故', closure: '道路封闭', construction: '道路施工', hazard: '道路风险' };
+  if (!titles[payload.eventType]) return fail('请选择正确的路况类型');
+  if (!String(payload.description || '').trim()) return fail('请填写现场情况');
+  const event = {
+    _id: store.id('safety'), userId: user._id, userName: user.nickname, eventType: payload.eventType,
+    title: titles[payload.eventType], description: String(payload.description).trim(), status: 'pending',
+    latitude: 30.2741, longitude: 120.1551, createdAt: store.currentTime()
+  };
+  db.safety_reports = db.safety_reports || [];
+  db.safety_reports.unshift(event);
   store.saveStore(db);
   return ok(event);
 }
@@ -800,12 +965,41 @@ function resetDemo() {
   return ok(store.resetStore());
 }
 
-module.exports = {
-  login, getHome, listTrips, getTrip, createTrip, updateTrip, applyTrip, joinTrip, approveTripRequest, leaveTrip, endTrip,
-  listMessages, listConversations, markConversationRead, sendMessage, shareLocation, getPrivateChat, sendPrivateMessage,
+const localApi = {
+  login, getHome, listTrips, getTrip, createTrip, updateTrip, applyTrip, joinTrip, approveTripRequest, leaveTrip, reviewTripLeave, removeTripMember, updateTripState, endTrip,
+  listMessages, listConversations, markConversationRead, sendMessage, shareLocation, sharePresence, getPrivateChat, sendPrivateMessage,
   getPoiChat, createPoiChat, followPoiChat, sendPoiMessage,
-  listGroupbuys, getGroupbuy, createOrder, listOrders, getOrder, requestRefund,
-  getMine, updateProfile, getUserProfile, toggleFollow, setBlocked, listSocial,
-  getCertification, submitCertification, listCoupons, listInvites, createNextTrip, publishNextTrip,
-  submitTicket, listTickets, getSettings, updateSettings, recordEmergency, getAdminSnapshot, resetDemo
+  listGroupbuys, getGroupbuy, getMerchant, createGroupbuySession, createOrder, listOrders, getOrder, requestRefund,
+  getMine, updateProfile, getUserProfile, getBadgeWall, toggleFollow, setBlocked, listSocial,
+  getCertification, submitCertification, listCoupons, listInvites, bindInviterByPhone, createNextTrip, matchNextTrip, publishNextTrip,
+  submitTicket, listTickets, getSettings, updateSettings, recordEmergency, reportSafetyEvent, getAdminSnapshot, resetDemo
 };
+
+localApi.sendSmsCode = () => ok({ delivery: 'offline-demo', devCode: '5200' });
+localApi.loginWithPhone = (phone, code, profile = {}) => code === '5200'
+  ? login({ ...profile, phone })
+  : fail('离线演示验证码为 5200');
+localApi.loginWechat = profile => login(profile);
+localApi.startCertification = payload => ok({ liveness: { demo: true, url: 'demo://liveness' }, ocr: { plate: payload.plate, vehicleModel: payload.vehicleModel } });
+localApi.planRoute = payload => ok({ start: payload.startPoint, end: payload.endPoint, route: payload.route || [] });
+localApi.subscribeRealtime = () => () => {};
+
+const api = {};
+for (const [name, method] of Object.entries(localApi)) {
+  api[name] = (...args) => remote.isEnabled() && remote[name] ? remote[name](...args) : method(...args);
+}
+api.isRemote = remote.isEnabled;
+
+function localDistance(first, second) {
+  const radians = value => Number(value) * Math.PI / 180;
+  const firstLat = first.latitude == null ? first.lat : first.latitude;
+  const firstLng = first.longitude == null ? first.lng : first.longitude;
+  const secondLat = second.latitude == null ? second.lat : second.latitude;
+  const secondLng = second.longitude == null ? second.lng : second.longitude;
+  const dLat = radians(secondLat - firstLat);
+  const dLng = radians(secondLng - firstLng);
+  const value = Math.sin(dLat / 2) ** 2 + Math.cos(radians(firstLat)) * Math.cos(radians(secondLat)) * Math.sin(dLng / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(value), Math.sqrt(1 - value));
+}
+
+module.exports = api;

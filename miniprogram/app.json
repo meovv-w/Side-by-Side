@@ -14,6 +14,7 @@
     "pages/support/support",
     "pages/groupbuyList/groupbuyList",
     "pages/groupbuyDetail/groupbuyDetail",
+    "pages/merchantDetail/merchantDetail",
     "pages/orders/orders",
     "pages/orderDetail/orderDetail",
     "pages/mine/mine",
@@ -24,6 +25,7 @@
     "pages/settings/settings",
     "pages/badges/badges",
     "pages/createPoiChat/createPoiChat"
+    ,"pages/liveness/liveness"
   ],
   "window": {
     "navigationBarTitleText": "同路行",
@@ -68,6 +70,9 @@
   "permission": {
     "scope.userLocation": {
       "desc": "用于展示附近行程和队友位置"
+    },
+    "scope.record": {
+      "desc": "用于在车队群聊中发送语音消息"
     }
   },
   "requiredPrivateInfos": [

@@ -1,6 +1,6 @@
 const api = require('../../utils/api');
 
-const relationText = { mutual: '已互关，可无限畅聊', teammate: '同队成员，可直接畅聊', following: '对方未回关，可发送 3 条消息', stranger: '关注后可发送消息' };
+const relationText = { mutual: '已互关，可无限畅聊', teammate: '同队成员，可直接畅聊', following: '对方未回关，可发送 3 条消息', incoming: '对方向你发来消息，可回复 1 条', replied: '对方已回复，可继续畅聊', blocked: '当前无法向对方发消息', stranger: '关注后可发送消息' };
 
 Page({
   data: { id: '', target: {}, currentUserId: '', relation: 'stranger', relationText: '', blocked: false, canSend: false, remaining: null, messages: [], content: '', scrollTarget: '' },

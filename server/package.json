@@ -1,0 +1,32 @@
+{
+  "name": "tongdao-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "TongDao V1 production API",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "node --watch src/server.js",
+    "start": "node src/server.js",
+    "demo": "NODE_ENV=development DB_MODE=memory PROVIDER_MODE=demo ALLOW_DEV_CODES=true PORT=8790 node src/server.js",
+    "test": "node --test --test-concurrency=1 test/*.test.js",
+    "test:integration": "node scripts/integration-smoke.js",
+    "migrate": "node scripts/migrate.js",
+    "seed": "node scripts/seed.js",
+    "check": "find src scripts test -name '*.js' -print0 | xargs -0 -n1 node --check"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "@fastify/cors": "^10.0.2",
+    "@fastify/jwt": "^10.2.0",
+    "@fastify/multipart": "^9.0.3",
+    "@fastify/websocket": "^11.0.2",
+    "bcryptjs": "^3.0.2",
+    "fastify": "^5.2.1",
+    "fastify-raw-body": "^5.0.0",
+    "ioredis": "^5.4.2",
+    "mysql2": "^3.12.0",
+    "qrcode": "^1.5.4"
+  }
+}

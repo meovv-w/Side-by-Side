@@ -165,3 +165,4 @@ button::after { border: 0; }
   background: rgba(255,255,255,.96);
   border-top: 1rpx solid #e1e6ea;
 }
+.avatar-photo { display: block; overflow: hidden; }

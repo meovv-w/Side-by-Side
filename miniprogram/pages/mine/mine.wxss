@@ -13,6 +13,15 @@
 .current-trip { display: flex; align-items: center; gap: 16rpx; margin: 18rpx 22rpx 0; padding: 20rpx; background: #172b4d; color: #fff; border-radius: 16rpx; }
 .current-icon { display: flex; align-items: center; justify-content: center; width: 62rpx; height: 62rpx; border-radius: 14rpx; background: #1f6feb; font-weight: 700; }
 .current-main { min-width: 0; flex: 1; }.current-main .muted { color: #c2cedc; }
+.growth-section { margin-top: 18rpx; padding: 22rpx; background: #fff; }
+.growth-heading { display: flex; align-items: center; justify-content: space-between; }
+.growth-heading .menu-title { margin-bottom: 0; }
+.growth-empty { padding: 18rpx 0 2rpx; color: #7b8793; font-size: 21rpx; }
+.growth-log-row { display: flex; align-items: center; justify-content: space-between; min-height: 78rpx; border-bottom: 1rpx solid #edf0f2; }
+.growth-log-row:last-child { border-bottom: 0; }
+.growth-reason { color: #34414d; font-size: 23rpx; }
+.growth-delta { color: #087f5b; font-size: 25rpx; font-weight: 700; }
+.growth-delta.negative { color: #c83c32; }
 .menu-section, .safety-section { margin-top: 18rpx; padding: 22rpx; background: #fff; }
 .menu-title { margin-bottom: 18rpx; color: #3c4854; font-size: 25rpx; font-weight: 700; }
 .menu-grid.two { display: grid; grid-template-columns: 1fr 1fr; gap: 12rpx; }

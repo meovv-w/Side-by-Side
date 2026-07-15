@@ -1,6 +1,6 @@
 <view class="mine-page">
   <view class="profile-band" bindtap="openProfile">
-    <view class="avatar large">{{avatarText}}</view>
+    <image wx:if="{{user.avatar}}" class="avatar large avatar-photo" src="{{user.avatar}}" mode="aspectFill"></image><view wx:else class="avatar large">{{avatarText}}</view>
     <view class="profile-main">
       <view class="profile-name">{{user.nickname || '同路用户'}} <text class="level-badge">Lv.{{user.level || 1}} {{levelTitle}}</text></view>
       <view class="growth-row"><text>同路值 {{user.growth || 0}} / 10000</text><text>{{growthProgress}}%</text></view>
@@ -22,6 +22,15 @@
     <view class="current-icon">行</view>
     <view class="current-main"><view class="card-title">{{currentTrip.from}} → {{currentTrip.to}}</view><view class="muted">{{currentTrip.teamName}} · {{currentTrip.departAt}}</view></view>
     <text>›</text>
+  </view>
+
+  <view class="growth-section">
+    <view class="growth-heading"><view class="menu-title">同路值明细</view><view class="muted">最近 {{recentGrowthLogs.length}} 条</view></view>
+    <view wx:if="{{recentGrowthLogs.length===0}}" class="growth-empty">完成同行、拼团或邀请后会产生同路值记录</view>
+    <view wx:for="{{recentGrowthLogs}}" wx:key="_id" class="growth-log-row">
+      <view><view class="growth-reason">{{item.reason}}</view><view class="muted">{{item.createdAt}}</view></view>
+      <text class="growth-delta {{item.delta<0?'negative':''}}">{{item.deltaText}}</text>
+    </view>
   </view>
 
   <view class="menu-section">

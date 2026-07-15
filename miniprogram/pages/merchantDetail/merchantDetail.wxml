@@ -1,0 +1,11 @@
+<view class="merchant-page" wx:if="{{merchant}}">
+  <view class="merchant-head"><view class="merchant-mark">店</view><view class="merchant-main"><view class="title">{{merchant.name}}</view><view class="merchant-meta">评分 {{scoreText}} · {{merchant.businessOpen === false ? '暂停营业' : '营业中'}}</view></view></view>
+  <view class="page merchant-content">
+    <view class="merchant-info"><view class="info-row"><text>地址</text><text>{{merchant.address || '暂无地址'}}</text></view><view class="info-row"><text>营业时间</text><text>{{merchant.businessHours || '请电话咨询'}}</text></view><view wx:if="{{merchant.description}}" class="merchant-description">{{merchant.description}}</view><view class="info-actions"><button class="secondary-btn" bindtap="navigate">导航</button><button class="primary-btn" bindtap="call">联系商家</button></view></view>
+    <view wx:if="{{merchant.rescueEnabled}}" class="rescue-band"><view class="card-title">道路救援服务</view><view>服务半径 {{merchant.rescueRadiusKm}}km · 搭电、拖车与应急维修</view></view>
+    <view class="section-header"><view class="section-title">车队专享价</view><view class="muted">{{groupbuys.length}} 个进行中</view></view>
+    <view wx:if="{{groupbuys.length===0}}" class="empty">当前没有进行中的拼团</view>
+    <view wx:for="{{groupbuys}}" wx:key="_id" class="deal-row" data-id="{{item._id}}" bindtap="openGroupbuy"><image src="{{item.coverPhoto}}" mode="aspectFill"></image><view class="deal-main"><view class="card-title">{{item.title}}</view><view class="muted">已拼 {{item.joined}}/{{item.targetPeople}} 人</view><view class="deal-price">车队价 ¥{{item.currentPrice}}</view></view><text>›</text></view>
+  </view>
+</view>
+<view wx:else class="empty">正在加载商家</view>

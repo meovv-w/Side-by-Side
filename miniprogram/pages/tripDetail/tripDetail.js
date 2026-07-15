@@ -6,6 +6,7 @@ Page({
     trip: null,
     members: [],
     requests: [],
+    leaveRequests: [],
     joined: false,
     owned: false,
     requestStatus: 'none',
@@ -33,6 +34,7 @@ Page({
         trip: { ...trip, statusText: statusMap[trip.status] || trip.status, plansText: (trip.plans || []).join(' · '), equipmentText: (trip.equipment || []).join(' · ') },
         members: res.data.members.map(member => ({ ...member, avatarText: (member.nickname || '同').slice(0, 1), level: member.user.level || 1, creditScore: member.user.creditScore || '-' })),
         requests: res.data.requests || [],
+        leaveRequests: res.data.leaveRequests || [],
         joined: res.data.joined,
         owned: res.data.owned,
         requestStatus: res.data.requestStatus,
@@ -71,6 +73,49 @@ Page({
     });
   },
 
+  reviewLeave(event) {
+    const memberId = event.currentTarget.dataset.id;
+    const approve = event.currentTarget.dataset.approve === 'yes';
+    api.reviewTripLeave(memberId, approve).then(res => {
+      if (!res.ok) return wx.showToast({ title: res.message, icon: 'none' });
+      wx.showToast({ title: approve ? '已同意退出' : '已保留成员' });
+      this.load();
+    });
+  },
+
+  removeMember(event) {
+    const memberId = event.currentTarget.dataset.id;
+    wx.showModal({
+      title: '移除这位成员？', content: '移除后该成员会自动退出车队群聊。', confirmText: '确认移除', confirmColor: '#D94841',
+      success: result => {
+        if (!result.confirm) return;
+        api.removeTripMember(this.data.id, memberId, '队长从车队移除').then(res => {
+          if (!res.ok) return wx.showToast({ title: res.message, icon: 'none' });
+          wx.showToast({ title: '成员已移除' });
+          this.load();
+        });
+      }
+    });
+  },
+
+  changeState(event) {
+    const action = event.currentTarget.dataset.action;
+    const labels = { depart: '标记出发', drive: '进入行进', complete: '完成行程', cancel: '取消行程' };
+    wx.showModal({
+      title: `${labels[action]}？`,
+      content: action === 'complete' ? '完成后不能再加入新成员，现有成员仍可在群聊发言。' : '车队状态将立即同步给所有成员。',
+      confirmText: '确认',
+      success: result => {
+        if (!result.confirm) return;
+        api.updateTripState(this.data.id, action).then(res => {
+          if (!res.ok) return wx.showToast({ title: res.message, icon: 'none' });
+          wx.showToast({ title: `${labels[action]}成功` });
+          this.load();
+        });
+      }
+    });
+  },
+
   edit() {
     wx.navigateTo({ url: `/pages/publishTrip/publishTrip?id=${this.data.id}` });
   },
@@ -99,7 +144,7 @@ Page({
         if (!result.confirm) return;
         api.leaveTrip(this.data.id).then(res => {
           if (!res.ok) return wx.showToast({ title: res.message, icon: 'none' });
-          wx.showToast({ title: '已退出车队' });
+          wx.showToast({ title: res.data.status === 'leave_pending' ? '退出申请已提交' : '已退出车队' });
           this.load();
         });
       }

@@ -12,10 +12,10 @@
         <view class="message-avatar">{{item.avatarText}}</view>
         <view class="message-body">
           <view class="message-name">{{item.nickname}} · {{item.createdAt}}</view>
-          <view wx:if="{{item.type === 'image'}}" class="bubble image-bubble"><image src="{{item.content}}" mode="aspectFill"></image></view>
+          <view wx:if="{{item.type === 'image'}}" class="bubble image-bubble" data-src="{{item.mediaUrl || item.content}}" catchtap="previewImage"><image src="{{item.mediaUrl || item.content}}" mode="aspectFill"></image></view>
           <view wx:elif="{{item.type === 'location'}}" class="bubble special-bubble"><text class="special-icon">位</text><view><view>共享位置</view><view class="bubble-meta">{{item.content}}</view></view></view>
           <view wx:elif="{{item.type === 'groupbuy'}}" class="bubble special-bubble groupbuy-bubble"><text class="special-icon">团</text><view><view>沿途拼团</view><view class="bubble-meta">{{item.content}}</view></view></view>
-          <view wx:elif="{{item.type === 'voice'}}" class="bubble voice-bubble">))) {{item.content}}</view>
+          <view wx:elif="{{item.type === 'voice'}}" class="bubble voice-bubble {{playingVoiceId===item._id?'playing':''}}" data-id="{{item._id}}" data-src="{{item.mediaUrl}}" catchtap="playVoice"><text class="voice-state">{{playingVoiceId===item._id?'■':'▶'}}</text><text>语音 {{item.duration || 1}}秒</text></view>
           <view wx:else class="bubble">{{item.content}}</view>
         </view>
       </view>
@@ -24,8 +24,8 @@
 
   <view class="composer">
     <button class="composer-icon" bindtap="attachment">＋</button>
-    <button class="composer-icon" bindtap="voice">话</button>
-    <input class="composer-input" placeholder="发消息到车队群" value="{{content}}" bindinput="onInput" confirm-type="send" bindconfirm="send" />
+    <button class="composer-icon {{recording?'recording':''}}" aria-label="{{recording?'停止录音':'录制语音'}}" bindtap="toggleVoice">{{recording?'■':'录'}}</button>
+    <input class="composer-input" placeholder="{{recording?('正在录音 '+recordSeconds+' 秒'):'发消息到车队群'}}" disabled="{{recording}}" value="{{content}}" bindinput="onInput" confirm-type="send" bindconfirm="send" />
     <button class="send-button" bindtap="send">发送</button>
   </view>
 </view>

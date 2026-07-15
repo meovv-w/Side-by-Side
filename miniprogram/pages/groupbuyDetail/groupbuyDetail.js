@@ -90,11 +90,41 @@ Page({
     });
   },
 
+  startGroupbuy() {
+    const targets = (this.data.item.tiers || []).map(item => Number(item.people)).filter(value => value > 1);
+    if (!targets.length) return wx.showToast({ title: '商家未设置可选人数', icon: 'none' });
+    wx.showActionSheet({
+      itemList: targets.map(value => `${value} 人目标`),
+      success: selection => {
+        api.getHome().then(home => {
+          const tripId = home.ok && home.data.currentTrip && home.data.currentTrip._id;
+          api.createGroupbuySession(this.data.item.productId || this.data.item._id, { targetPeople: targets[selection.tapIndex], tripId }).then(response => {
+            if (!response.ok) return wx.showToast({ title: response.message, icon: 'none' });
+            wx.showToast({ title: '新拼团已发起' });
+            wx.redirectTo({ url: `/pages/groupbuyDetail/groupbuyDetail?id=${response.data._id}` });
+          });
+        });
+      }
+    });
+  },
+
+  support() {
+    wx.navigateTo({ url: '/pages/support/support?category=支付问题' });
+  },
+
   navigate() {
     wx.openLocation({ latitude: 29.63, longitude: 119.06, name: this.data.item.merchantName, address: this.data.item.address || '' });
   },
 
+  openMerchant() {
+    wx.navigateTo({ url: `/pages/merchantDetail/merchantDetail?id=${this.data.item.merchantId}` });
+  },
+
   onShareAppMessage() {
     return { title: `${this.data.item.title}，一起拼更便宜`, path: `/pages/groupbuyDetail/groupbuyDetail?id=${this.data.id}` };
+  },
+
+  onShareTimeline() {
+    return { title: `${this.data.item.title}，一起拼更便宜`, query: `id=${this.data.id}` };
   }
 });

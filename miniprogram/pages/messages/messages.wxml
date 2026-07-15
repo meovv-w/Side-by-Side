@@ -22,7 +22,7 @@
       <view class="conversation-preview">{{item.lastMessage}}</view>
       <view class="conversation-meta">{{item.meta}}</view>
       <view wx:if="{{item.type === 'private' && item.relation === 'stranger'}}" class="private-actions">
-        <text class="action-link">回复</text><text class="action-link">忽略</text><text class="action-link danger-text" catchtap="block" data-user="{{item.targetId}}">拉黑</text>
+        <text class="action-link" catchtap="replyPrivate" data-user="{{item.targetId}}">回复</text><text class="action-link" catchtap="ignore" data-user="{{item.targetId}}">忽略</text><text class="action-link danger-text" catchtap="block" data-user="{{item.targetId}}">拉黑</text>
       </view>
     </view>
     <text wx:if="{{item.unread > 0}}" class="badge">{{item.unread}}</text>

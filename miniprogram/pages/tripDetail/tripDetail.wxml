@@ -31,11 +31,21 @@
     </view>
   </view>
 
+  <view wx:if="{{owned && leaveRequests.length}}">
+    <view class="section-header"><view class="section-title">退出申请</view><view class="tag warning">{{leaveRequests.length}} 待处理</view></view>
+    <view wx:for="{{leaveRequests}}" wx:key="_id" class="card request-card">
+      <view class="row"><view><view class="card-title">{{item.nickname}}</view><view class="muted">{{item.vehicleModel || '车队成员'}}</view></view><view class="tag warning">申请退出</view></view>
+      <view class="request-message">{{item.leaveReason || '用户主动退出'}}</view>
+      <view class="request-actions"><button class="secondary-btn small-btn" data-id="{{item._id}}" data-approve="no" bindtap="reviewLeave">暂不批准</button><button class="primary-btn small-btn" data-id="{{item._id}}" data-approve="yes" bindtap="reviewLeave">同意退出</button></view>
+    </view>
+  </view>
+
   <view class="section-header"><view class="section-title">车队成员</view><view class="muted">{{members.length}} 人</view></view>
   <view class="members-card">
     <view wx:for="{{members}}" wx:key="_id" class="member" data-id="{{item.userId}}" bindtap="openMember">
       <view class="avatar small">{{item.avatarText}}</view>
-      <view class="member-main"><view>{{item.nickname}} <text wx:if="{{item.role === 'owner'}}" class="tag warning">队长</text></view><view class="caption">Lv.{{item.level}} · 信用 {{item.creditScore}}</view></view><text>›</text>
+      <view class="member-main"><view>{{item.nickname}} <text wx:if="{{item.role === 'owner'}}" class="tag warning">队长</text><text wx:if="{{item.status === 'leave_pending'}}" class="tag neutral">待退出</text></view><view class="caption">Lv.{{item.level}} · 信用 {{item.creditScore}}</view></view>
+      <button wx:if="{{owned && item.role !== 'owner' && item.status !== 'leave_pending'}}" class="member-remove" catchtap="removeMember" data-id="{{item._id}}">移除</button><text wx:else>›</text>
     </view>
   </view>
 
@@ -45,8 +55,10 @@
     <button class="secondary-btn" bindtap="openGroupbuys">沿途拼团</button>
   </view>
 
-  <view wx:if="{{owned}}" class="owner-actions"><button class="secondary-btn" bindtap="edit">编辑行程</button><button class="danger-outline" bindtap="end">结束行程</button></view>
-  <button wx:if="{{joined && !owned}}" class="leave-link" bindtap="leave">退出车队</button>
+  <view wx:if="{{owned && trip.stage === 'forming'}}" class="owner-actions three"><button class="secondary-btn" bindtap="edit">编辑行程</button><button class="primary-btn" data-action="depart" bindtap="changeState">标记出发</button><button class="danger-outline" data-action="cancel" bindtap="changeState">取消行程</button></view>
+  <view wx:elif="{{owned && trip.stage === 'departed'}}" class="owner-actions"><button class="primary-btn" data-action="drive" bindtap="changeState">开始行进</button><button class="secondary-btn" data-action="complete" bindtap="changeState">完成行程</button></view>
+  <button wx:elif="{{owned && trip.stage === 'driving'}}" class="primary-btn complete-button" data-action="complete" bindtap="changeState">完成行程</button>
+  <button wx:if="{{joined && (!owned || trip.stage === 'completed')}}" class="leave-link" bindtap="leave">{{trip.stage === 'completed' ? '退出永久群聊' : '退出车队'}}</button>
 
   <view class="footer-actions">
     <button class="secondary-btn" bindtap="greetOwner">先聊聊</button>

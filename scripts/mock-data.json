@@ -28,7 +28,7 @@
           "补给达人",
           "安全先锋"
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "u_owner_001",
@@ -55,7 +55,7 @@
           "五星队长",
           "川藏领航"
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "u_owner_002",
@@ -81,7 +81,33 @@
         "badges": [
           "友善车主"
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
+      },
+      {
+        "_id": "u_solo_001",
+        "openid": "mock-solo-001",
+        "nickname": "山野独行",
+        "avatar": "",
+        "role": "owner",
+        "phone": "13800000006",
+        "ownerCertStatus": "approved",
+        "vehicleModel": "斯巴鲁森林人",
+        "vehicleNo": "浙D6S318",
+        "growth": 2200,
+        "level": 2,
+        "creditScore": 4.9,
+        "inviteCode": "TDSOLO",
+        "discoverable": true,
+        "bio": "独自旅行，也愿意认识附近同路人。",
+        "distanceKm": 5100,
+        "teamCount": 6,
+        "companionCount": 3,
+        "followerCount": 18,
+        "followingCount": 12,
+        "badges": [
+          "独行探索"
+        ],
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "u_guest_001",
@@ -107,7 +133,7 @@
         "badges": [
           "新锐队友"
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       }
     ],
     "vehicle_certs": [
@@ -118,8 +144,8 @@
         "plate": "浙A8T520",
         "status": "approved",
         "licensePhoto": "mock-license.jpg",
-        "createdAt": "2026-07-01 09:00",
-        "reviewedAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00",
+        "reviewedAt": "2026-07-15 09:00"
       },
       {
         "_id": "cert_002",
@@ -128,7 +154,7 @@
         "plate": "浙B2K991",
         "status": "pending",
         "licensePhoto": "mock-pending.jpg",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       }
     ],
     "trips": [
@@ -191,7 +217,7 @@
             "longitude": 119.86
           }
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "trip_002",
@@ -241,7 +267,7 @@
             "longitude": 121.3188
           }
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "trip_003",
@@ -251,7 +277,7 @@
         "teamName": "黄山晨雾小队",
         "from": "杭州奥体中心",
         "to": "黄山风景区南门",
-        "departAt": "2026-08-01 07:30",
+        "departAt": "2026-07-29 07:30",
         "seatTotal": 5,
         "seatJoined": 1,
         "priceShare": 90,
@@ -296,7 +322,7 @@
             "longitude": 120.2105
           }
         ],
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       }
     ],
     "trip_members": [
@@ -306,7 +332,7 @@
         "userId": "u_owner_001",
         "nickname": "阿成车主",
         "role": "owner",
-        "joinedAt": "2026-07-01 09:00"
+        "joinedAt": "2026-07-15 09:00"
       },
       {
         "_id": "tm_002",
@@ -314,7 +340,7 @@
         "userId": "u_guest_001",
         "nickname": "小北",
         "role": "passenger",
-        "joinedAt": "2026-07-01 09:00"
+        "joinedAt": "2026-07-15 09:00"
       },
       {
         "_id": "tm_003",
@@ -322,7 +348,7 @@
         "userId": "u_owner_002",
         "nickname": "南风",
         "role": "owner",
-        "joinedAt": "2026-07-01 09:00"
+        "joinedAt": "2026-07-15 09:00"
       },
       {
         "_id": "tm_004",
@@ -330,7 +356,7 @@
         "userId": "u_mock_001",
         "nickname": "林小路",
         "role": "passenger",
-        "joinedAt": "2026-07-01 09:00"
+        "joinedAt": "2026-07-15 09:00"
       },
       {
         "_id": "tm_005",
@@ -338,7 +364,7 @@
         "userId": "u_mock_001",
         "nickname": "林小路",
         "role": "owner",
-        "joinedAt": "2026-07-01 09:00"
+        "joinedAt": "2026-07-15 09:00"
       }
     ],
     "trip_requests": [
@@ -350,7 +376,7 @@
         "vehicleModel": "大众 ID.4",
         "message": "我从杭州东出发，可以提前到集合点，也会带应急电源。",
         "status": "pending",
-        "createdAt": "2026-07-13 10:18"
+        "createdAt": "2026-07-14 10:18"
       }
     ],
     "messages": [
@@ -446,6 +472,20 @@
         "targetId": "poi_003"
       }
     ],
+    "notifications": [
+      {
+        "_id": "notice_001",
+        "type": "trip",
+        "title": "车队状态更新",
+        "content": "千岛湖周末小队已进入行进状态",
+        "priority": "normal",
+        "read": false,
+        "data": {
+          "tripId": "trip_001"
+        },
+        "createdAt": "2026-07-01 09:25"
+      }
+    ],
     "poi_chats": [
       {
         "_id": "poi_001",
@@ -454,7 +494,7 @@
         "online": 6,
         "status": "active",
         "lastMessage": "咖啡双人券还有名额",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "poi_002",
@@ -464,7 +504,7 @@
         "status": "quiet",
         "lastMessage": "东侧停车场还有空位",
         "followed": false,
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "poi_003",
@@ -535,21 +575,21 @@
         "followerId": "u_mock_001",
         "targetType": "user",
         "targetId": "u_owner_002",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "follow_002",
         "followerId": "u_owner_002",
         "targetType": "user",
         "targetId": "u_mock_001",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "follow_003",
         "followerId": "u_mock_001",
         "targetType": "team",
         "targetId": "trip_001",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       }
     ],
     "blocked_users": [],
@@ -557,6 +597,7 @@
       {
         "_id": "gb_001",
         "title": "千岛湖服务区咖啡双人券",
+        "coverPhoto": "/images/products/coffee.jpg",
         "merchantName": "湖畔咖啡站",
         "price": 29.9,
         "originPrice": 48,
@@ -581,13 +622,16 @@
         "minPeople": 3,
         "joined": 2,
         "stock": 50,
-        "validUntil": "2026-08-10 23:59",
+        "validUntil": "2026-07-25 23:59",
         "description": "美式/拿铁任选两杯，到店出示核销码使用。",
+        "productId": "product_mock_001",
         "merchantId": "m_001",
         "distanceKm": 1.8,
         "category": "餐饮",
         "targetPeople": 10,
         "sold": 18,
+        "latitude": 29.72,
+        "longitude": 119.338,
         "participants": [
           "阿成车主",
           "小北",
@@ -600,6 +644,7 @@
       {
         "_id": "gb_002",
         "title": "高速补给零食包",
+        "coverPhoto": "/images/products/snack.jpg",
         "merchantName": "同路补给铺",
         "price": 19.9,
         "originPrice": 32,
@@ -620,13 +665,16 @@
         "minPeople": 4,
         "joined": 3,
         "stock": 80,
-        "validUntil": "2026-08-08 23:59",
+        "validUntil": "2026-07-23 23:59",
         "description": "坚果、能量棒、湿巾组合，适合车队路上共享。",
+        "productId": "product_mock_002",
         "merchantId": "m_002",
         "distanceKm": 4.6,
         "category": "补给",
         "targetPeople": 8,
         "sold": 32,
+        "latitude": 29.81,
+        "longitude": 119.51,
         "participants": [
           "南风",
           "小北",
@@ -649,8 +697,8 @@
         "amount": 19.9,
         "status": "paid",
         "verifyCode": "620318",
-        "createdAt": "2026-07-01 10:40",
-        "expiresAt": "2026-08-08 23:59",
+        "createdAt": "2026-07-15 09:00",
+        "expiresAt": "2026-07-23 23:59",
         "refundStatus": "none"
       },
       {
@@ -679,7 +727,7 @@
         "source": "qrcode",
         "bonus": 10,
         "status": "registered",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "inv_002",
@@ -688,7 +736,7 @@
         "source": "link",
         "bonus": 20,
         "status": "ordered",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       }
     ],
     "coupons": [
@@ -700,7 +748,8 @@
         "amount": 10,
         "threshold": 30,
         "status": "unused",
-        "expireAt": "2026-08-10",
+        "expireAt": "2026-08-14",
+        "verifyCode": "CP520001",
         "scope": "全平台拼团可用"
       },
       {
@@ -712,7 +761,8 @@
         "amount": 8,
         "threshold": 29,
         "status": "unused",
-        "expireAt": "2026-08-08",
+        "expireAt": "2026-07-29",
+        "verifyCode": "CP520002",
         "scope": "仅湖畔咖啡站可用"
       },
       {
@@ -723,8 +773,8 @@
         "amount": 5,
         "threshold": 20,
         "status": "used",
-        "expireAt": "2026-07-30",
-        "usedAt": "2026-06-20 08:20",
+        "expireAt": "2026-07-25",
+        "usedAt": "2026-06-25 08:20",
         "scope": "补给类商品可用"
       }
     ],
@@ -734,23 +784,24 @@
         "userId": "u_mock_001",
         "delta": 10,
         "reason": "邀请好友注册",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       },
       {
         "_id": "gl_002",
         "userId": "u_mock_001",
         "delta": 20,
         "reason": "完成拼团订单",
-        "createdAt": "2026-07-01 09:00"
+        "createdAt": "2026-07-15 09:00"
       }
     ],
     "next_trips": [
       {
         "_id": "draft_001",
         "userId": "u_mock_001",
-        "from": "杭州",
-        "to": "黄山",
-        "departAt": "2026-07-12 09:00",
+        "from": "杭州西湖文化广场",
+        "to": "千岛湖中心湖区",
+        "departAt": "2026-07-29 09:00",
+        "note": "希望找一支周末轻松出发的队伍",
         "status": "draft"
       }
     ],
@@ -796,12 +847,12 @@
         "category": "订单核销",
         "title": "核销码无法识别",
         "status": "open",
-        "createdAt": "2026-07-01 09:00",
+        "createdAt": "2026-07-15 09:00",
         "messages": [
           {
             "sender": "user",
             "content": "商家扫码后提示找不到订单。",
-            "createdAt": "2026-07-01 09:00"
+            "createdAt": "2026-07-15 09:00"
           }
         ]
       },
@@ -812,12 +863,12 @@
         "category": "商家信息",
         "title": "商家营业时间变更",
         "status": "replied",
-        "createdAt": "2026-07-01 09:00",
+        "createdAt": "2026-07-15 09:00",
         "messages": [
           {
             "sender": "ops",
             "content": "已联系商家更新营业时间。",
-            "createdAt": "2026-07-01 09:00"
+            "createdAt": "2026-07-15 09:00"
           }
         ]
       }
@@ -886,6 +937,18 @@
         "longitude": 120.18
       },
       {
+        "_id": "layer_driver",
+        "type": "driver",
+        "icon": "car",
+        "title": "山野独行",
+        "subtitle": "个人自驾者 · Lv.2",
+        "desc": "距你 3.2km · 正在附近自驾",
+        "userId": "u_solo_001",
+        "distanceKm": 3.2,
+        "latitude": 30.29,
+        "longitude": 120.17
+      },
+      {
         "_id": "layer_005",
         "type": "poi",
         "icon": "food",
@@ -915,5 +978,5 @@
   },
   "mode": "local-product-mode",
   "source": "miniprogram/utils/mockStore.js",
-  "generatedAt": "2026-07-13T03:40:27.560Z"
+  "generatedAt": "2026-07-15T14:16:24.832Z"
 }

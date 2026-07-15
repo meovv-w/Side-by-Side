@@ -1,0 +1,2 @@
+ALTER TABLE trip_drafts
+  ADD COLUMN note VARCHAR(1000) NOT NULL DEFAULT '' AFTER waypoints;

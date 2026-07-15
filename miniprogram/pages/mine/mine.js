@@ -9,6 +9,7 @@ Page({
     orders: [],
     coupons: [],
     growthLogs: [],
+    recentGrowthLogs: [],
     nextTrips: [],
     social: {},
     avatarText: '同',
@@ -32,6 +33,10 @@ Page({
         orders: res.data.orders || [],
         coupons: res.data.coupons || [],
         growthLogs: res.data.growthLogs || [],
+        recentGrowthLogs: (res.data.growthLogs || []).slice(0, 5).map(item => ({
+          ...item,
+          deltaText: `${Number(item.delta || 0) >= 0 ? '+' : ''}${Number(item.delta || 0)}`
+        })),
         nextTrips: res.data.nextTrips || [],
         social: res.data.social || {},
         currentTrip,

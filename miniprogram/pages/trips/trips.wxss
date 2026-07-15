@@ -9,6 +9,7 @@
 .empty-current { display: flex; align-items: center; justify-content: space-between; padding: 25rpx; background: #fff; border: 1rpx solid #e0e6eb; border-radius: 16rpx; }
 .publish-button { width: 100%; height: 76rpx; line-height: 76rpx; margin: 18rpx 0 4rpx; border: 1rpx dashed #8bb7f3; border-radius: 14rpx; background: #f4f8ff; color: #1f6feb; font-size: 25rpx; }
 .publish-plus { margin-right: 5rpx; font-size: 32rpx; }
+.sort-bar { display: flex; align-items: center; justify-content: flex-end; gap: 10rpx; margin: 12rpx 0 18rpx; color: #71808f; font-size: 21rpx; }.sort-item { min-width: 76rpx; padding: 9rpx 14rpx; border: 1rpx solid #d8e0e6; border-radius: 8rpx; background: #fff; color: #43505c; text-align: center; }.sort-item.active { border-color: #1f6feb; background: #eaf2ff; color: #1558b0; font-weight: 650; }
 .trip-card { margin-bottom: 18rpx; padding: 24rpx; background: #fff; border: 1rpx solid #e0e6eb; border-radius: 16rpx; }
 .trip-head { display: flex; align-items: center; gap: 14rpx; }
 .leader-avatar { display: flex; align-items: center; justify-content: center; width: 70rpx; height: 70rpx; border-radius: 50%; background: #dce9ff; color: #1558b0; font-weight: 700; }

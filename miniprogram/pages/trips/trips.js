@@ -21,7 +21,9 @@ Page({
       { key: 'joined', label: '我的行程' },
       { key: 'pending', label: '申请中' }
     ],
-    currentFilter: 'recommend'
+    currentFilter: 'recommend',
+    sortModes: [{ key: 'match', label: '顺路' }, { key: 'distance', label: '距离' }, { key: 'time', label: '时间' }],
+    sortMode: 'match'
   },
 
   onShow() {
@@ -29,7 +31,7 @@ Page({
   },
 
   load() {
-    api.listTrips().then(res => {
+    api.listTrips(this.data.sortMode).then(res => {
       if (!res.ok) return;
       const allTrips = res.data.map(decorate);
       const currentTrip = allTrips.find(item => item.joined && item.status !== 'done') || null;
@@ -39,6 +41,10 @@ Page({
 
   changeFilter(event) {
     this.setData({ currentFilter: event.currentTarget.dataset.key }, this.applyFilter);
+  },
+
+  changeSort(event) {
+    this.setData({ sortMode: event.currentTarget.dataset.key }, () => this.load());
   },
 
   applyFilter() {

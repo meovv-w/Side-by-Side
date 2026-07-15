@@ -1,0 +1,50 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: tongdao
+      MYSQL_USER: tongdao
+      MYSQL_PASSWORD: tongdao_dev
+      MYSQL_ROOT_PASSWORD: tongdao_root_dev
+    ports:
+      - "3306:3306"
+    volumes:
+      - tongdao_mysql:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-utongdao", "-ptongdao_dev"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    ports:
+      - "6379:6379"
+    volumes:
+      - tongdao_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+    env_file: ./server/.env
+    environment:
+      MYSQL_URL: mysql://tongdao:tongdao_dev@mysql:3306/tongdao
+      REDIS_URL: redis://redis:6379/0
+    ports:
+      - "8787:8787"
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  tongdao_mysql:
+  tongdao_redis:

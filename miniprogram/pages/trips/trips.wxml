@@ -15,6 +15,7 @@
   <view class="filter-bar">
     <view wx:for="{{filters}}" wx:key="key" class="filter {{currentFilter === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeFilter">{{item.label}}</view>
   </view>
+  <view wx:if="{{currentFilter === 'recommend'}}" class="sort-bar"><text>排序</text><view wx:for="{{sortModes}}" wx:key="key" class="sort-item {{sortMode === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="changeSort">{{item.label}}</view></view>
 
   <view wx:if="{{trips.length === 0}}" class="empty">当前分类没有行程</view>
   <view wx:for="{{trips}}" wx:key="_id" class="trip-card" bindtap="openTrip" data-id="{{item._id}}">
@@ -24,7 +25,9 @@
         <view class="trip-name">{{item.teamName || item.title}}</view>
         <view class="muted">队长 {{item.ownerName}} · 信用 4.9</view>
       </view>
-      <view class="match-rate">顺路率 <text>{{item.matchRate || 80}}%</text></view>
+      <view wx:if="{{sortMode === 'match'}}" class="match-rate">顺路率 <text>{{item.matchRate == null ? '--' : item.matchRate + '%'}}</text></view>
+      <view wx:elif="{{sortMode === 'distance'}}" class="match-rate">距起点 <text>{{item.distanceKm == null ? '--' : item.distanceKm + 'km'}}</text></view>
+      <view wx:else class="match-rate">按时间 <text>即将出发</text></view>
     </view>
     <view class="trip-route">{{item.from}} → {{item.to}}</view>
     <view class="trip-date">{{item.departAt}} · 预计 {{item.days || 1}} 天</view>

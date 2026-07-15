@@ -1,6 +1,13 @@
 const STORAGE_KEY = 'tongdao_product_store_v2';
 
-const now = '2026-07-01 09:00';
+function dateAfter(days, time = '09:00') {
+  const value = new Date(Date.now() + days * 86400000);
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const date = String(value.getDate()).padStart(2, '0');
+  return `${value.getFullYear()}-${month}-${date} ${time}`;
+}
+
+const now = dateAfter(0);
 
 const seed = {
   currentUserId: 'u_mock_001',
@@ -78,6 +85,30 @@ const seed = {
       createdAt: now
     },
     {
+      _id: 'u_solo_001',
+      openid: 'mock-solo-001',
+      nickname: '山野独行',
+      avatar: '',
+      role: 'owner',
+      phone: '13800000006',
+      ownerCertStatus: 'approved',
+      vehicleModel: '斯巴鲁森林人',
+      vehicleNo: '浙D6S318',
+      growth: 2200,
+      level: 2,
+      creditScore: 4.9,
+      inviteCode: 'TDSOLO',
+      discoverable: true,
+      bio: '独自旅行，也愿意认识附近同路人。',
+      distanceKm: 5100,
+      teamCount: 6,
+      companionCount: 3,
+      followerCount: 18,
+      followingCount: 12,
+      badges: ['独行探索'],
+      createdAt: now
+    },
+    {
       _id: 'u_guest_001',
       openid: 'mock-guest-001',
       nickname: '小北',
@@ -114,7 +145,7 @@ const seed = {
       title: '周六杭州到千岛湖自驾',
       from: '杭州西湖文化广场',
       to: '千岛湖中心湖区',
-      departAt: '2026-07-20 08:30',
+      departAt: dateAfter(5, '08:30'),
       seatTotal: 4,
       seatJoined: 3,
       priceShare: 68,
@@ -149,7 +180,7 @@ const seed = {
       title: '上海到苏州周末咖啡线',
       from: '上海虹桥站',
       to: '苏州平江路',
-      departAt: '2026-07-22 10:00',
+      departAt: dateAfter(7, '10:00'),
       seatTotal: 3,
       seatJoined: 1,
       priceShare: 45,
@@ -184,7 +215,7 @@ const seed = {
       teamName: '黄山晨雾小队',
       from: '杭州奥体中心',
       to: '黄山风景区南门',
-      departAt: '2026-08-01 07:30',
+      departAt: dateAfter(14, '07:30'),
       seatTotal: 5,
       seatJoined: 1,
       priceShare: 90,
@@ -220,7 +251,7 @@ const seed = {
     { _id: 'tm_005', tripId: 'trip_003', userId: 'u_mock_001', nickname: '林小路', role: 'owner', joinedAt: now }
   ],
   trip_requests: [
-    { _id: 'request_001', tripId: 'trip_003', userId: 'u_guest_001', nickname: '小北', vehicleModel: '大众 ID.4', message: '我从杭州东出发，可以提前到集合点，也会带应急电源。', status: 'pending', createdAt: '2026-07-13 10:18' }
+    { _id: 'request_001', tripId: 'trip_003', userId: 'u_guest_001', nickname: '小北', vehicleModel: '大众 ID.4', message: '我从杭州东出发，可以提前到集合点，也会带应急电源。', status: 'pending', createdAt: dateAfter(-1, '10:18') }
   ],
   messages: [
     { _id: 'msg_000', tripId: 'trip_001', userId: 'system', nickname: '系统', type: 'system', content: '阿成车主创建了千岛湖周末小队', createdAt: '2026-07-01 09:08' },
@@ -234,6 +265,9 @@ const seed = {
     { _id: 'conv_private_001', type: 'private', title: '南风 · ★4.9', lastMessage: '苏州线可以带宠物吗？', time: '10:20', meta: '已互关', relation: 'mutual', unread: 1, targetId: 'u_owner_002' },
     { _id: 'conv_private_002', type: 'private', title: '小北 · 1条可回', lastMessage: '我走慢道，你们到哪了？', time: '10:32', meta: '同队成员', relation: 'teammate', unread: 0, targetId: 'u_guest_001' },
     { _id: 'conv_poi_old', type: 'poi', title: '二郎山隧道施工', lastMessage: '已归档 · 最后消息 3天前', time: '3天前', meta: '历史话题', archived: true, unread: 0, targetId: 'poi_003' }
+  ],
+  notifications: [
+    { _id: 'notice_001', type: 'trip', title: '车队状态更新', content: '千岛湖周末小队已进入行进状态', priority: 'normal', read: false, data: { tripId: 'trip_001' }, createdAt: '2026-07-01 09:25' }
   ],
   poi_chats: [
     { _id: 'poi_001', name: '千岛湖服务区补给讨论', location: '杭千高速服务区', online: 6, status: 'active', lastMessage: '咖啡双人券还有名额', createdAt: now },
@@ -260,6 +294,7 @@ const seed = {
     {
       _id: 'gb_001',
       title: '千岛湖服务区咖啡双人券',
+      coverPhoto: '/images/products/coffee.jpg',
       merchantName: '湖畔咖啡站',
       price: 29.9,
       originPrice: 48,
@@ -272,14 +307,15 @@ const seed = {
       minPeople: 3,
       joined: 2,
       stock: 50,
-      validUntil: '2026-08-10 23:59',
+      validUntil: dateAfter(10, '23:59'),
       description: '美式/拿铁任选两杯，到店出示核销码使用。'
-      ,merchantId: 'm_001', distanceKm: 1.8, category: '餐饮', targetPeople: 10, sold: 18,
+      ,productId: 'product_mock_001', merchantId: 'm_001', distanceKm: 1.8, category: '餐饮', targetPeople: 10, sold: 18, latitude: 29.72, longitude: 119.338,
       participants: ['阿成车主', '小北', '南风', '晴川'], rating: 4.8, address: '千岛湖服务区北区'
     },
     {
       _id: 'gb_002',
       title: '高速补给零食包',
+      coverPhoto: '/images/products/snack.jpg',
       merchantName: '同路补给铺',
       price: 19.9,
       originPrice: 32,
@@ -291,14 +327,14 @@ const seed = {
       minPeople: 4,
       joined: 3,
       stock: 80,
-      validUntil: '2026-08-08 23:59',
+      validUntil: dateAfter(8, '23:59'),
       description: '坚果、能量棒、湿巾组合，适合车队路上共享。'
-      ,merchantId: 'm_002', distanceKm: 4.6, category: '补给', targetPeople: 8, sold: 32,
+      ,productId: 'product_mock_002', merchantId: 'm_002', distanceKm: 4.6, category: '补给', targetPeople: 8, sold: 32, latitude: 29.81, longitude: 119.51,
       participants: ['南风', '小北', '阿洛'], rating: 4.7, address: '杭千高速补给点'
     }
   ],
   orders: [
-    { _id: 'order_001', userId: 'u_mock_001', groupbuyId: 'gb_002', merchantId: 'm_002', merchantName: '同路补给铺', title: '高速补给零食包', originAmount: 24.9, discountAmount: 5, amount: 19.9, status: 'paid', verifyCode: '620318', createdAt: '2026-07-01 10:40', expiresAt: '2026-08-08 23:59', refundStatus: 'none' },
+    { _id: 'order_001', userId: 'u_mock_001', groupbuyId: 'gb_002', merchantId: 'm_002', merchantName: '同路补给铺', title: '高速补给零食包', originAmount: 24.9, discountAmount: 5, amount: 19.9, status: 'paid', verifyCode: '620318', createdAt: now, expiresAt: dateAfter(8, '23:59'), refundStatus: 'none' },
     { _id: 'order_002', userId: 'u_mock_001', groupbuyId: 'gb_old', merchantId: 'm_001', merchantName: '湖畔咖啡站', title: '湖景早餐套餐', originAmount: 36, discountAmount: 0, amount: 36, status: 'used', verifyCode: '885201', createdAt: '2026-06-20 08:20', verifiedAt: '2026-06-20 09:05', verifyLocation: '湖畔咖啡站', refundStatus: 'none' }
   ],
   invites: [
@@ -306,16 +342,16 @@ const seed = {
     { _id: 'inv_002', inviterId: 'u_mock_001', inviteeName: '阿洛', source: 'link', bonus: 20, status: 'ordered', createdAt: now }
   ],
   coupons: [
-    { _id: 'cp_001', userId: 'u_mock_001', title: '新用户拼团券', type: 'platform', amount: 10, threshold: 30, status: 'unused', expireAt: '2026-08-10', scope: '全平台拼团可用' },
-    { _id: 'cp_002', userId: 'u_mock_001', merchantId: 'm_001', title: '湖畔咖啡拉新券', type: 'merchant', amount: 8, threshold: 29, status: 'unused', expireAt: '2026-08-08', scope: '仅湖畔咖啡站可用' },
-    { _id: 'cp_003', userId: 'u_mock_001', title: '安全补给券', type: 'reward', amount: 5, threshold: 20, status: 'used', expireAt: '2026-07-30', usedAt: '2026-06-20 08:20', scope: '补给类商品可用' }
+    { _id: 'cp_001', userId: 'u_mock_001', title: '新用户拼团券', type: 'platform', amount: 10, threshold: 30, status: 'unused', expireAt: dateAfter(30).slice(0, 10), verifyCode: 'CP520001', scope: '全平台拼团可用' },
+    { _id: 'cp_002', userId: 'u_mock_001', merchantId: 'm_001', title: '湖畔咖啡拉新券', type: 'merchant', amount: 8, threshold: 29, status: 'unused', expireAt: dateAfter(14).slice(0, 10), verifyCode: 'CP520002', scope: '仅湖畔咖啡站可用' },
+    { _id: 'cp_003', userId: 'u_mock_001', title: '安全补给券', type: 'reward', amount: 5, threshold: 20, status: 'used', expireAt: dateAfter(10).slice(0, 10), usedAt: dateAfter(-20, '08:20'), scope: '补给类商品可用' }
   ],
   growth_logs: [
     { _id: 'gl_001', userId: 'u_mock_001', delta: 10, reason: '邀请好友注册', createdAt: now },
     { _id: 'gl_002', userId: 'u_mock_001', delta: 20, reason: '完成拼团订单', createdAt: now }
   ],
   next_trips: [
-    { _id: 'draft_001', userId: 'u_mock_001', from: '杭州', to: '黄山', departAt: '2026-07-12 09:00', status: 'draft' }
+    { _id: 'draft_001', userId: 'u_mock_001', from: '杭州西湖文化广场', to: '千岛湖中心湖区', departAt: dateAfter(14), note: '希望找一支周末轻松出发的队伍', status: 'draft' }
   ],
   merchants: [
     { _id: 'm_001', name: '湖畔咖啡站', phone: '0571-88880001', address: '千岛湖服务区北区', status: 'approved', level: 'A', score: 92, verifyCount: 18, settleAmount: 1256.8 },
@@ -345,6 +381,7 @@ const seed = {
     { _id: 'layer_002', type: 'safe', icon: 'hospital', title: '千岛湖镇人民医院', subtitle: '安全 POI', desc: '急诊 24 小时 · 距离 2.4km', address: '淳安县环湖北路1869号', phone: '120', distanceKm: 2.4, latitude: 29.62, longitude: 119.05 },
     { _id: 'layer_003', type: 'traffic', icon: 'warning', title: '杭千高速 K122 施工', subtitle: '道路事件', desc: '拥堵 2.1km · 预计通行 18 分钟', distanceKm: 32, latitude: 30.01, longitude: 119.65 },
     { _id: 'layer_004', type: 'team', icon: 'car', title: '318经典车队', subtitle: '同向车队 · 5人', desc: '队长阿杰 · 前方 8km · 成都到拉萨', targetId: 'trip_001', leaderId: 'u_owner_001', distanceKm: 8, latitude: 30.31, longitude: 120.18 },
+    { _id: 'layer_driver', type: 'driver', icon: 'car', title: '山野独行', subtitle: '个人自驾者 · Lv.2', desc: '距你 3.2km · 正在附近自驾', userId: 'u_solo_001', distanceKm: 3.2, latitude: 30.29, longitude: 120.17 },
     { _id: 'layer_005', type: 'poi', icon: 'food', title: '湖畔家常菜', subtitle: '沿途餐厅', desc: '评分 4.7 · 可停 12 辆车 · 距离 6.3km', address: '淳安县千岛湖大道88号', phone: '0571-64881234', distanceKm: 6.3, latitude: 29.76, longitude: 119.22 },
     { _id: 'layer_006', type: 'team', icon: 'car', title: '轻野露营队', subtitle: '逆向车队 · 3人', desc: '队长晴川 · 后方 14km · 千岛湖到杭州', leaderId: 'u_guest_001', distanceKm: 14, direction: 'opposite', latitude: 29.91, longitude: 119.48 }
   ]

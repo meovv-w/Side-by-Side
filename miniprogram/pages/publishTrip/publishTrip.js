@@ -1,9 +1,17 @@
 const api = require('../../utils/api');
 
+function dateAfter(days) {
+  const value = new Date(Date.now() + days * 86400000);
+  const month = String(value.getMonth() + 1).padStart(2, '0');
+  const date = String(value.getDate()).padStart(2, '0');
+  return `${value.getFullYear()}-${month}-${date}`;
+}
+
 Page({
   data: {
     id: '',
     step: 1,
+    minDate: dateAfter(0),
     depthOptions: ['浅度', '中度', '深度'],
     depthIndex: 1,
     planOptions: [
@@ -19,7 +27,7 @@ Page({
       waypointsText: '',
       title: '',
       teamName: '',
-      departDate: '2026-07-20',
+      departDate: dateAfter(7),
       departTime: '08:30',
       days: '3',
       dailyKm: '260',
@@ -36,6 +44,10 @@ Page({
     ],
     polyline: [],
     markers: []
+    ,startPoint: null,
+    endPoint: null,
+    latitude: 30.2741,
+    longitude: 120.1551
   },
 
   onLoad(options) {
@@ -56,7 +68,7 @@ Page({
             waypointsText: (trip.waypoints || []).join('、'),
             title: trip.title,
             teamName: trip.teamName,
-            departDate: parts[0] || '2026-07-20',
+            departDate: parts[0] || dateAfter(7),
             departTime: parts[1] || '08:30',
             days: `${trip.days || 1}`,
             dailyKm: `${trip.dailyKm || 200}`,
@@ -68,6 +80,8 @@ Page({
             note: trip.note || ''
           },
           route: trip.route || this.data.route
+          ,startPoint: trip.route && trip.route[0] ? { lng: trip.route[0].longitude, lat: trip.route[0].latitude } : null,
+          endPoint: trip.route && trip.route.length ? { lng: trip.route[trip.route.length - 1].longitude, lat: trip.route[trip.route.length - 1].latitude } : null
         }, this.buildRouteMarkers);
       });
     } else {
@@ -85,7 +99,25 @@ Page({
 
   onInput(event) {
     const field = event.currentTarget.dataset.field;
-    this.setData({ [`form.${field}`]: event.detail.value });
+    const changes = { [`form.${field}`]: event.detail.value };
+    if (field === 'from') changes.startPoint = null;
+    if (field === 'to') changes.endPoint = null;
+    this.setData(changes);
+  },
+
+  choosePoint(event) {
+    const field = event.currentTarget.dataset.field;
+    wx.chooseLocation({
+      success: location => {
+        const point = { lng: location.longitude, lat: location.latitude };
+        this.setData({
+          [`form.${field}`]: location.name || location.address,
+          [field === 'from' ? 'startPoint' : 'endPoint']: point,
+          latitude: location.latitude,
+          longitude: location.longitude
+        });
+      }
+    });
   },
 
   onDate(event) {
@@ -117,8 +149,26 @@ Page({
   next() {
     const form = this.data.form;
     if (this.data.step === 1 && (!form.from || !form.to)) return wx.showToast({ title: '请填写起点和终点', icon: 'none' });
+    if (this.data.step === 1) return this.previewRoute(() => this.setData({ step: 2 }));
     if (this.data.step === 2 && (!form.title || !form.teamName || Number(form.seatTotal) < 1 || Number(form.seatTotal) > 20)) return wx.showToast({ title: '请补全行程信息，车队上限为1-20辆', icon: 'none' });
     this.setData({ step: Math.min(3, this.data.step + 1) });
+  },
+
+  previewRoute(done) {
+    wx.showLoading({ title: '规划路线' });
+    api.planRoute({
+      from: this.data.form.from, to: this.data.form.to,
+      startPoint: this.data.startPoint, endPoint: this.data.endPoint,
+      waypoints: this.data.form.waypointsText.split(/[、,，]/).map(item => item.trim()).filter(Boolean).slice(0, 5), route: this.data.route
+    }).then(result => {
+      wx.hideLoading();
+      if (!result.ok) return wx.showToast({ title: result.message || '路线规划失败', icon: 'none' });
+      const route = result.data.route && result.data.route.length ? result.data.route : this.data.route;
+      this.setData({
+        route, startPoint: result.data.start || this.data.startPoint, endPoint: result.data.end || this.data.endPoint,
+        latitude: route[0].latitude, longitude: route[0].longitude
+      }, () => { this.buildRouteMarkers(); if (done) done(); });
+    });
   },
 
   previous() {
@@ -133,6 +183,9 @@ Page({
       waypoints: form.waypointsText.split(/[、,，]/).map(item => item.trim()).filter(Boolean).slice(0, 5),
       plans: this.data.planOptions.filter(item => item.checked).map(item => item.key),
       equipment: ['应急药箱', '对讲机']
+      ,startPoint: this.data.startPoint,
+      endPoint: this.data.endPoint,
+      route: this.data.route
     };
     const action = this.data.id ? api.updateTrip(this.data.id, payload) : api.createTrip(payload);
     action.then(res => {

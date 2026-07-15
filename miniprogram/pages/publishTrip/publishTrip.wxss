@@ -3,6 +3,7 @@
 .step-line { width: 74rpx; height: 4rpx; margin-top: 24rpx; background: #dfe4e8; }.step-line.active { background: #1f6feb; }
 .route-form { position: relative; padding: 8rpx 22rpx 8rpx 70rpx; }
 .route-input { height: 90rpx; border-bottom: 1rpx solid #edf0f2; }.route-input:last-child { border: 0; }
+.route-input-row{display:grid;grid-template-columns:minmax(0,1fr) 70rpx;align-items:center;border-bottom:1rpx solid #edf0f2}.route-input-row .route-input{border:0}.location-picker{display:flex;align-items:center;justify-content:center;width:58rpx;height:58rpx;padding:0;border:0;border-radius:50%;background:#eaf2ff;color:#1558b0;font-size:34rpx;line-height:1}.location-picker::after{border:0}
 .route-dot { position: absolute; left: 30rpx; width: 18rpx; height: 18rpx; border-radius: 50%; }.route-dot.start { top: 44rpx; background: #1f6feb; }.route-dot.waypoint { top: 134rpx; background: #f59e0b; }.route-dot.end { top: 224rpx; background: #0e7c66; }
 .route-line { position: absolute; left: 38rpx; width: 2rpx; height: 73rpx; background: #cbd3da; }.route-line:nth-of-type(2) { top: 61rpx; }.route-line:nth-of-type(4) { top: 151rpx; }
 .route-map { width: 100%; height: 430rpx; border-radius: 16rpx; }

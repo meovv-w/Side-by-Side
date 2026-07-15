@@ -3,6 +3,7 @@
     <view class="invite-label">我的专属邀请标识</view>
     <view class="invite-code" bindtap="copy">{{inviteCode}}</view>
     <view class="invite-sub">好友通过分享卡注册后自动与你绑定</view>
+    <image wx:if="{{qrCode}}" class="invite-qr" src="{{qrCode}}" mode="aspectFit"></image>
     <button class="share-button" open-type="share">分享给微信好友</button>
   </view>
   <view class="card reward-progress">
@@ -21,5 +22,5 @@
     <view class="record-main"><view class="card-title">{{item.inviteeName}}</view><view class="muted">{{item.source==='qrcode'?'扫码注册':'分享链接'}} · {{item.status==='ordered'?'已完成首单':'已注册'}}</view></view>
     <text class="tag success">+{{item.bonus}}同路值</text>
   </view>
-  <view class="invite-rule"><view class="card-title">邀请认定规则</view><view>分享链接或邀请卡注册后自动绑定；新用户注册 7 天内可补充绑定邀请人，每位用户仅能绑定一次。</view></view>
+  <view class="invite-rule"><view class="card-title">邀请认定规则</view><view>分享链接或邀请卡注册后自动绑定；新用户注册 7 天内可补充绑定邀请人，每位用户仅能绑定一次。</view><button wx:if="{{canBindInviter}}" class="bind-inviter" bindtap="bindInviter">通过邀请人手机号补绑</button></view>
 </view>

@@ -38,17 +38,20 @@ const requiredPages = [
   'pages/support/support',
   'pages/groupbuyList/groupbuyList',
   'pages/groupbuyDetail/groupbuyDetail',
+  'pages/merchantDetail/merchantDetail',
   'pages/orders/orders',
   'pages/orderDetail/orderDetail',
   'pages/badges/badges',
   'pages/settings/settings',
   'pages/mine/mine',
-  'pages/login/login'
+  'pages/login/login',
+  'pages/liveness/liveness'
 ];
 
 function checkStructure() {
   const app = readJson('miniprogram/app.json');
   assert(Array.isArray(app.pages), 'app.json pages must be an array');
+  assert(app.pages.length === requiredPages.length, `expected ${requiredPages.length} registered pages, got ${app.pages.length}`);
   for (const page of requiredPages) assert(app.pages.includes(page), `required page is not registered: ${page}`);
   for (const page of app.pages) {
     for (const ext of ['js', 'wxml', 'wxss', 'json']) assert(exists(`miniprogram/${page}.${ext}`), `missing miniprogram/${page}.${ext}`);
@@ -69,20 +72,84 @@ function checkStructure() {
     assert(pkg.dependencies && pkg.dependencies['wx-server-sdk'], `missing wx-server-sdk in ${name}`);
   }
 
+  for (const asset of ['miniprogram/images/products/coffee.jpg', 'miniprogram/images/products/snack.jpg']) {
+    assert(exists(asset), `product asset missing: ${asset}`);
+  }
+
   const mock = readJson('scripts/mock-data.json');
   for (const name of ['users', 'trips', 'trip_members', 'messages', 'groupbuys', 'orders', 'vehicle_certs', 'invites', 'coupons', 'growth_logs']) {
     assert(Array.isArray(mock.collections[name]), `mock collection must be an array: ${name}`);
   }
 
-  for (const adminFile of ['admin-merchant/index.html', 'admin-ops/index.html']) {
+  for (const [adminFile, apiFile] of [['admin-merchant/index.html', 'admin-merchant/api-mode.js'], ['admin-ops/index.html', 'admin-ops/api-mode.js']]) {
     const html = read(adminFile);
-    assert(html.includes('localStorage'), `${adminFile} must persist actions`);
-    assert(!html.includes("alert('Mock"), `${adminFile} still contains mock-only alerts`);
+    const apiSource = read(apiFile);
+    assert(html.includes('api-mode.js'), `${adminFile} must load its real API adapter`);
     assert(html.includes('<form') && html.includes('<table'), `${adminFile} must contain operational forms and tables`);
+    assert(apiSource.includes('fetch(`${API_BASE}${path}`'), `${apiFile} must call the shared API`);
+    assert(apiSource.includes('查看详情') || apiFile.includes('ops'), `${apiFile} must expose record details`);
+    assert(!/Mock-only|alert\(['"]Mock/.test(`${html}\n${apiSource}`), `${adminFile} still contains mock-only actions`);
   }
+
+
+  const backendFiles = [
+    'compose.yaml', 'server/package.json', 'server/src/server.js', 'server/src/app.js',
+    'server/src/routes/auth.js', 'server/src/routes/trips.js', 'server/src/routes/chat.js',
+    'server/src/routes/maps.js', 'server/src/routes/commerce.js', 'server/src/routes/users.js',
+    'server/src/routes/merchant.js', 'server/src/routes/ops.js',
+    'server/migrations/001_initial.sql', 'server/migrations/002_trip_draft_note.sql',
+    'server/migrations/003_safety_report_review.sql', 'server/migrations/004_rescue_services.sql'
+  ];
+  for (const filename of backendFiles) assert(exists(filename), `backend file missing: ${filename}`);
+  const routes = backendFiles.filter(filename => filename.includes('/routes/')).map(read).join('\n');
+  for (const endpoint of ['/api/trips', '/api/conversations', '/api/map/context', '/api/orders', '/api/coupons/me', '/api/merchant', '/api/ops']) {
+    assert(routes.includes(endpoint), `server route family missing: ${endpoint}`);
+  }
+  assert(read('admin-merchant/api-mode.js').includes('/api/merchant/verify/coupon'), 'merchant coupon verification UI is missing');
+  assert(read('admin-ops/api-mode.js').includes('/api/ops/coupon-redemptions'), 'ops coupon settlement UI is missing');
+
+  checkBindingsAndNavigation(app);
+  checkTrackedFiles();
 
   const visibleSources = requiredPages.flatMap(page => ['wxml', 'js'].map(ext => read(`miniprogram/${page}.${ext}`))).join('\n');
   assert(!/Mock 登录|模拟支付|MVP 使用模拟/.test(visibleSources), 'user-facing mock labels remain');
+  assert(!/start="2026-/.test(visibleSources), 'hardcoded minimum date remains in a date picker');
+}
+
+function checkBindingsAndNavigation(app) {
+  for (const page of app.pages) {
+    const wxml = read(`miniprogram/${page}.wxml`);
+    const js = read(`miniprogram/${page}.js`);
+    const handlers = new Set([...wxml.matchAll(/(?:bind|catch)[\w-]*="([A-Za-z_$][\w$]*)"/g)].map(match => match[1]));
+    for (const handler of handlers) assert(new RegExp(`\\b${handler}\\s*\\(`).test(js), `${page} handler is not implemented: ${handler}`);
+    for (const match of js.matchAll(/\/pages\/[A-Za-z]+\/[A-Za-z]+/g)) {
+      assert(app.pages.includes(match[0].slice(1)), `${page} navigates to an unregistered page: ${match[0]}`);
+    }
+  }
+}
+
+function checkTrackedFiles() {
+  const ignore = read('.gitignore');
+  for (const pattern of ['*.docx', '*.pem', '*.key', '.env']) assert(ignore.includes(pattern), `.gitignore must exclude ${pattern}`);
+  const textFiles = walk(root)
+    .map(filename => path.relative(root, filename))
+    .filter(filename => /\.(?:js|json|md|html|wxss|wxml|sql|ya?ml|txt|example)$/i.test(filename));
+  for (const filename of textFiles) {
+    const source = read(filename);
+    assert(!/ghp_[A-Za-z0-9_?=:.-]{12,}/.test(source), `GitHub token-like value found in ${filename}`);
+    assert(!/-----BEGIN (?:RSA |EC |OPENSSH )?PRIVATE KEY-----/.test(source), `private key found in ${filename}`);
+  }
+}
+
+function walk(directory) {
+  const result = [];
+  for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+    if (entry.name === '.git' || entry.name === 'node_modules' || entry.name === 'miniprogram_npm') continue;
+    const filename = path.join(directory, entry.name);
+    if (entry.isDirectory()) result.push(...walk(filename));
+    else result.push(filename);
+  }
+  return result;
 }
 
 async function checkProductFlow() {
@@ -119,8 +186,9 @@ async function checkProductFlow() {
   });
   assert(trip.ok && trip.data.teamName === '自动验收小队', 'three-step trip publish payload failed');
   const message = await api.sendMessage(trip.data._id, '车队文本消息', 'text');
+  const voice = await api.sendMessage(trip.data._id, 'wxfile://voice.mp3', 'voice', { duration: 5 });
   const location = await api.shareLocation(trip.data._id);
-  assert(message.ok && location.ok && location.data.type === 'location', 'group chat attachment flow failed');
+  assert(message.ok && voice.ok && voice.data.mediaUrl && voice.data.duration === 5 && location.ok && location.data.type === 'location', 'group chat attachment flow failed');
 
   const conversations = await api.listConversations('all');
   assert(conversations.ok && conversations.data.some(item => item.type === 'private'), 'conversation types missing');
@@ -138,6 +206,8 @@ async function checkProductFlow() {
   assert(groups.ok && groups.data.length >= 2 && groups.data[0].currentPrice, 'tier price calculation missing');
   const group = await api.getGroupbuy('gb_001');
   assert(group.ok && group.data.coupons.length > 0, 'eligible coupon matching failed');
+  const coupons = await api.listCoupons();
+  assert(coupons.ok && coupons.data.some(item => item.status === 'unused' && item.verifyCode), 'coupon verification code is missing');
   const order = await api.createOrder('gb_001', { couponId: group.data.coupons[0]._id });
   assert(order.ok && order.data.verifyCode && order.data.discountAmount > 0, 'coupon order flow failed');
   const duplicate = await api.createOrder('gb_001');
@@ -149,6 +219,8 @@ async function checkProductFlow() {
 
   const profile = await api.getUserProfile('u_owner_002');
   assert(profile.ok && profile.data.user.bio && profile.data.trips.length > 0, 'user profile flow failed');
+  const social = await api.listSocial();
+  assert(social.ok && social.data.followers.every(item => item._id && item._id === (item.userId || item._id)), 'social profile identifiers are inconsistent');
   const blocked = await api.setBlocked('u_owner_002', true);
   assert(blocked.ok && blocked.data.blocked, 'block user flow failed');
   await api.setBlocked('u_owner_002', false);
@@ -170,7 +242,7 @@ async function checkProductFlow() {
   assert(sos.ok && sos.data.status === 'notified', 'SOS record failed');
 
   const mine = await api.getMine();
-  assert(mine.ok && mine.data.orders.length >= 3 && mine.data.social && mine.data.settings, 'mine aggregate data incomplete');
+  assert(mine.ok && mine.data.orders.length >= 3 && mine.data.social && mine.data.settings && mine.data.growthLogs.length >= 2, 'mine aggregate data incomplete');
   const admin = await api.getAdminSnapshot();
   assert(admin.ok && admin.data.stats.users >= 4 && admin.data.refunds.length >= 1 && admin.data.emergencyEvents.length >= 1, 'admin aggregate data incomplete');
 }

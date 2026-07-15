@@ -1,9 +1,9 @@
 <view class="detail-page with-footer" wx:if="{{item}}">
-  <view class="product-visual"><view class="visual-category">{{item.category}}</view><view class="visual-title">{{item.title}}</view><view class="visual-sub">沿途好物 · 到店核销</view></view>
+  <view class="product-visual"><image src="{{item.coverPhoto}}" mode="aspectFill"></image><view class="visual-category">{{item.category}}</view></view>
   <view class="content">
     <view class="deal-summary">
       <view class="price-row"><text class="price">¥{{item.currentPrice}}</text><text class="origin">¥{{item.originPrice}}</text><text class="save">已省 {{item.saved}} 元</text></view>
-      <view class="title">{{item.title}}</view><view class="merchant" bindtap="navigate">{{item.merchantName}} · {{item.distanceKm}}km · 评分 {{item.rating}} ›</view>
+      <view class="title">{{item.title}}</view><view class="merchant" bindtap="openMerchant">{{item.merchantName}} · {{item.distanceKm}}km · 评分 {{item.rating}} ›</view>
     </view>
     <view class="countdown-row"><text>距拼团结束</text><text>{{countdown}}</text></view>
 
@@ -17,7 +17,8 @@
     <view class="card"><view class="section-title">使用说明</view><view class="description">{{item.description}}</view><view class="rule"><text>1</text><view>支付成功后生成 6 位核销码</view></view><view class="rule"><text>2</text><view>到店向商家出示核销码</view></view><view class="rule"><text>3</text><view>核销前可在订单页申请退款</view></view></view>
   </view>
 
-  <view class="footer-actions deal-footer"><button class="secondary-btn" bindtap="shareTeam">发到车队群</button><button class="primary-btn buy-button" bindtap="openCheckout">立即参团 · ¥{{item.currentPrice}}</button></view>
+  <view class="group-tools"><button class="secondary-btn" bindtap="shareTeam">发到车队群</button><button class="secondary-btn" open-type="share">分享微信好友</button><button class="secondary-btn" bindtap="startGroupbuy">新开一团</button></view>
+  <view class="footer-actions deal-footer"><button class="primary-btn buy-button" bindtap="openCheckout">立即参团 · ¥{{item.currentPrice}}</button></view>
 
   <view wx:if="{{checkoutOpen}}" class="mask" bindtap="closeCheckout"></view>
   <view wx:if="{{checkoutOpen}}" class="checkout-sheet">
@@ -27,6 +28,7 @@
     <view class="coupon-choice {{selectedCouponId === '' ? 'selected' : ''}}" data-id="" bindtap="selectCoupon"><text>不使用优惠券</text><text>{{selectedCouponId === '' ? '✓' : ''}}</text></view>
     <view wx:for="{{item.coupons}}" wx:key="_id" class="coupon-choice {{selectedCouponId === item._id ? 'selected' : ''}}" data-id="{{item._id}}" bindtap="selectCoupon"><view><view>{{item.title}}</view><view class="caption">满{{item.threshold}}减{{item.amount}}</view></view><view class="coupon-amount">-¥{{item.amount}} {{selectedCouponId === item._id ? '✓' : ''}}</view></view>
     <view class="pay-summary"><view><text>商品金额</text><text>¥{{item.currentPrice}}</text></view><view><text>优惠</text><text>-¥{{selectedCoupon ? selectedCoupon.amount : 0}}</text></view><view class="pay-total"><text>实付</text><text>¥{{payable}}</text></view></view>
+    <button class="checkout-support" bindtap="support">支付遇到问题？联系客服</button>
     <button class="primary-btn pay-button" bindtap="pay">确认支付 ¥{{payable}}</button>
   </view>
 </view>

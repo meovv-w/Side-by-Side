@@ -4,19 +4,21 @@ Page({
   data: {
     filters: [{ key: 'nearby', label: '离我最近' }, { key: 'route', label: '当前路线' }, { key: 'hot', label: '人气最高' }],
     current: 'nearby',
+    routeLabel: '附近路线',
     allItems: [],
     items: []
   },
 
   onShow() {
-    api.listGroupbuys().then(res => {
+    Promise.all([api.listGroupbuys(), api.getHome()]).then(([res, home]) => {
       if (!res.ok) return;
       const allItems = res.data.map(item => ({
         ...item,
         progress: Math.min(100, Math.round(Number(item.joined || 0) / Number(item.targetPeople || item.minPeople || 1) * 100)),
         save: Number((Number(item.originPrice || 0) - Number(item.currentPrice || item.price || 0)).toFixed(1))
       }));
-      this.setData({ allItems }, this.sortItems);
+      const trip = home.ok && home.data.currentTrip;
+      this.setData({ allItems, routeLabel: trip ? `${trip.from} → ${trip.to}` : '附近路线' }, this.sortItems);
     });
   },
 

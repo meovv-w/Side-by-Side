@@ -8,13 +8,13 @@
   <view wx:if="{{step === 1}}">
     <view class="section-header"><view><view class="section-title">路线规划</view><view class="muted">可添加 1-5 个途经点</view></view></view>
     <view class="route-form card">
-      <view class="route-dot start"></view><input class="route-input" placeholder="起点（默认当前位置）" value="{{form.from}}" data-field="from" bindinput="onInput" />
+      <view class="route-dot start"></view><view class="route-input-row"><input class="route-input" placeholder="起点（默认当前位置）" value="{{form.from}}" data-field="from" bindinput="onInput" /><button class="location-picker" data-field="from" bindtap="choosePoint">⌖</button></view>
       <view class="route-line"></view>
       <view class="route-dot waypoint"></view><input class="route-input" placeholder="途经点，用顿号分隔（选填）" value="{{form.waypointsText}}" data-field="waypointsText" bindinput="onInput" />
       <view class="route-line"></view>
-      <view class="route-dot end"></view><input class="route-input" placeholder="终点" value="{{form.to}}" data-field="to" bindinput="onInput" />
+      <view class="route-dot end"></view><view class="route-input-row"><input class="route-input" placeholder="终点" value="{{form.to}}" data-field="to" bindinput="onInput" /><button class="location-picker" data-field="to" bindtap="choosePoint">⌖</button></view>
     </view>
-    <map class="route-map" latitude="30.2741" longitude="120.1551" scale="8" markers="{{markers}}" polyline="{{polyline}}"></map>
+    <map class="route-map" latitude="{{latitude}}" longitude="{{longitude}}" scale="8" markers="{{markers}}" polyline="{{polyline}}"></map>
   </view>
 
   <view wx:elif="{{step === 2}}">
@@ -22,7 +22,7 @@
     <text class="field-label">行程标题</text><input class="input" placeholder="例如：川西三日轻野自驾" value="{{form.title}}" data-field="title" bindinput="onInput" />
     <text class="field-label">车队名称</text><input class="input" placeholder="给车队取个名字" value="{{form.teamName}}" data-field="teamName" bindinput="onInput" />
     <view class="field-grid">
-      <view><text class="field-label">出发日期</text><picker mode="date" value="{{form.departDate}}" start="2026-07-13" bindchange="onDate"><view class="picker-field">{{form.departDate}}</view></picker></view>
+      <view><text class="field-label">出发日期</text><picker mode="date" value="{{form.departDate}}" start="{{minDate}}" bindchange="onDate"><view class="picker-field">{{form.departDate}}</view></picker></view>
       <view><text class="field-label">出发时间</text><picker mode="time" value="{{form.departTime}}" bindchange="onTime"><view class="picker-field">{{form.departTime}}</view></picker></view>
       <view><text class="field-label">预计天数</text><input class="input" type="number" value="{{form.days}}" data-field="days" bindinput="onInput" /></view>
       <view><text class="field-label">每日里程 km</text><input class="input" type="number" value="{{form.dailyKm}}" data-field="dailyKm" bindinput="onInput" /></view>
