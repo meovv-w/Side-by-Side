@@ -31,11 +31,32 @@
   }
 
   function time(value) {
-    return value ? text(String(value).replace('T', ' ').replace(/\.000Z$|Z$/g, '')) : '-';
+    if (!value) return '-';
+    const raw = String(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return text(raw);
+    const source = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(raw) && !/[zZ]|[+-]\d\d:?\d\d$/.test(raw)
+      ? `${raw.replace(' ', 'T')}Z`
+      : raw;
+    const date = new Date(source);
+    if (!Number.isFinite(date.getTime())) return text(raw.replace('T', ' ').replace(/\.\d{3}Z$|Z$/g, ''));
+    const pad = number => String(number).padStart(2, '0');
+    return text(`${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`);
+  }
+
+  function orderTier(order) {
+    const unitPrice = Number(order.originAmount || 0) / Math.max(1, Number(order.quantity || 1));
+    const tier = (order.product && order.product.tiers || []).find(item => Math.abs(Number(item.price) - unitPrice) < 0.011);
+    return tier ? `${tier.people}人档 · ¥${Number(tier.price)}` : `成交单价 ¥${unitPrice.toFixed(2)}`;
   }
 
   async function login(account, password) {
     const result = await call('/api/admin/auth/login', { method: 'POST', body: { account, password } });
+    token = result.token;
+    localStorage.setItem(TOKEN_KEY, token);
+  }
+
+  async function demoLogin() {
+    const result = await call('/api/admin/auth/demo', { method: 'POST', body: { role: 'ops' } });
     token = result.token;
     localStorage.setItem(TOKEN_KEY, token);
   }
@@ -75,10 +96,12 @@
       orders: orders.map(item => ({
         id: text(item.orderNo), rowId: item.id, user: text(item.user.nickname), userPhone: text(item.user.phone || '-'),
         merchant: text(item.merchant.name), merchantPhone: text(item.merchant.phone || '-'), title: text(item.product.name), productId: item.productId,
+        tier: orderTier(item),
         quantity: Number(item.quantity || 1), originAmount: Number(item.originAmount), discountAmount: Number(item.discountAmount), amount: Number(item.paidAmount),
         paymentProvider: text(item.paymentProvider || '-'), transactionId: text(item.paymentTransactionId || '-'), verifyCode: text(item.verifyCode || '-'),
         status: item.status === 'verified' ? 'used' : item.status === 'refund_pending' ? 'paid' : item.status,
-        time: time(item.createdAt), paidAt: time(item.paidAt), expiresAt: time(item.expiresAt), verifiedAt: time(item.verifiedAt)
+        time: time(item.createdAt), paidAt: time(item.paidAt), expiresAt: time(item.expiresAt), verifiedAt: time(item.verifiedAt),
+        verifiedBy: text(item.verifiedBy || '-'), verifiedLng: item.verifiedLng, verifiedLat: item.verifiedLat
       })),
       refunds: refunds.map(item => ({ id: item.id, orderId: text(item.order.orderNo), user: text(item.user.nickname), amount: Number(item.amount), reason: text(item.reason), status: item.status === 'pending_review' ? 'pending' : item.status, time: time(item.createdAt) })),
       settlements: settlements.map(item => ({ id: item.id, merchant: text(item.merchant.name), period: `${time(item.periodStart)} 至 ${time(item.periodEnd)}`, gross: Number(item.grossAmount), rate: Number(item.commissionRate), net: Number(item.netAmount), status: item.status === 'completed' ? 'settled' : item.status })),
@@ -88,14 +111,41 @@
         user: text(item.user && item.user.nickname || '-'), amount: Number(item.amount), status: item.status,
         providerId: text(item.providerId || '-'), time: time(item.createdAt), settledAt: time(item.settledAt)
       })),
-      budget: { budget: Number(coupons.budget.monthlyTotal || 0), userLimit: Number(coupons.budget.monthlyUserLimit || 0) },
+      budget: {
+        budget: Number(coupons.budget.monthlyTotal || 0), userLimit: Number(coupons.budget.monthlyUserLimit || 0),
+        committed: Number(coupons.budgetUsage && coupons.budgetUsage.committed || 0),
+        spent: Number(coupons.budgetUsage && coupons.budgetUsage.spent || 0),
+        month: coupons.budgetUsage && coupons.budgetUsage.month || ''
+      },
       coupons: coupons.items.map(item => ({ id: item.id, title: text(item.name), owner: item.ownerType === 'platform' ? '平台' : text(item.ownerId), issued: Number(item.issued), used: Number(item.used), amount: Number(item.amount), status: item.status })),
       invites: invites.map(item => {
         const pending = item.records.find(record => record.rewardStatus === 'pending');
-        return { id: pending ? pending.id : item.inviter.id, name: text(item.inviter.nickname), invited: item.registered, registered: item.registered, ordered: item.firstOrders, reward: pending ? `待发放 ¥${pending.rewardValue}` : '无待发奖励', pending: Boolean(pending) };
+        const records = item.records.map(record => ({
+          id: record.id, invitee: text(record.invitee && record.invitee.nickname || record.inviteeId),
+          source: record.source, status: record.status, rewardStatus: record.rewardStatus,
+          rewardValue: Number(record.rewardValue || 0), boundAt: time(record.boundAt), firstOrderAt: time(record.firstOrderAt)
+        }));
+        const issued = records.filter(record => record.rewardStatus === 'issued').reduce((total, record) => total + record.rewardValue, 0);
+        return {
+          id: item.inviter.id, pendingId: pending && pending.id, name: text(item.inviter.nickname),
+          invited: item.registered, registered: item.registered, ordered: item.firstOrders,
+          reward: pending ? `待发放 ¥${pending.rewardValue}` : `已发放 ¥${issued}`, pending: Boolean(pending), records
+        };
       }),
       growth: Object.fromEntries(growth.map(item => [text(item.name), Number(item.points)])),
-      chats: chats.map(item => ({ id: item.id, name: text(item.name), location: text(item.locationName), online: 0, status: item.status, reports: 0 })),
+      chats: chats.map(item => ({
+        id: item.id, name: text(item.name), location: text(item.locationName), online: Number(item.onlineCount || 0),
+        status: item.status, reports: (item.reports || []).length,
+        messages: (item.messages || []).map(message => ({
+          id: message.id, sender: text(message.sender && message.sender.nickname || (message.senderId ? '同路用户' : '系统')),
+          type: message.messageType, content: text(message.content || message.mediaUrl || ''), time: time(message.createdAt)
+        })),
+        reportItems: (item.reports || []).map(report => ({
+          id: report.id, user: text(report.user && report.user.nickname || report.userId), title: text(report.title),
+          messageId: report.messageId || '', status: report.status, time: time(report.createdAt),
+          evidence: (report.messages || []).filter(message => message.senderType === 'user').map(message => text(message.content)).join('；')
+        }))
+      })),
       safetyReports: trafficEvents.map(item => ({
         id: item.id, reporter: text(item.reporter && item.reporter.nickname || (item.source === 'provider' ? '高德数据' : '运营录入')),
         title: text(item.title), description: text(item.description), lng: Number(item.lng), lat: Number(item.lat),
@@ -107,7 +157,8 @@
       })),
       tickets: tickets.map(item => ({
         id: item.id, type: text(item.category), user: text(item.user.nickname), userPhone: text(item.user.phone || '-'),
-        title: text(item.title), priority: item.priority, orderId: item.orderId || '',
+        title: text(item.title), priority: item.priority, orderId: item.orderId || (item.targetType === 'order' ? item.targetId : ''),
+        targetType: item.targetType || '', targetId: item.targetId || '', messageId: item.messageId || '',
         status: ['resolved', 'closed'].includes(item.status) ? 'replied' : 'open', time: time(item.createdAt),
         messages: (item.messages || []).map(message => ({ senderType: message.senderType, content: text(message.content), time: time(message.createdAt) }))
       })),
@@ -119,8 +170,14 @@
 
   function renderSettings() {
     const form = document.querySelector('#assessmentRuleForm');
-    for (const level of ['bronze', 'silver', 'gold', 'diamond']) form[level].value = assessmentRules[level] ? Number(assessmentRules[level].commissionRate) * 100 : '';
+    for (const level of ['bronze', 'silver', 'gold', 'diamond']) {
+      const rule = assessmentRules[level] || {};
+      form[`${level}Score`].value = rule.minScore == null ? '' : Number(rule.minScore);
+      form[`${level}Rate`].value = rule.commissionRate == null ? '' : Number(rule.commissionRate) * 100;
+      form[`${level}Benefit`].value = rule.benefit || '';
+    }
     document.querySelector('#autoReplyForm [name=text]').value = autoReply.text || '';
+    document.querySelector('#autoReplyForm [name=enabled]').checked = autoReply.enabled === true;
   }
 
   window.renderUsers = () => {
@@ -155,7 +212,7 @@
     const data = state.dashboard || { stats: {}, todo: {} };
     const stats = data.stats || {};
     const todo = data.todo || {};
-    document.querySelector('#stats').innerHTML = `<div class="stat">注册用户<b>${Number(stats.registeredUsers || 0)}</b></div><div class="stat">已入驻商家<b>${Number(stats.approvedMerchants || 0)}</b></div><div class="stat">拼团活动<b>${Number(stats.groupbuys || 0)}</b></div><div class="stat">拼团成功率<b>${Math.round(Number(stats.groupbuySuccessRate || 0) * 100)}%</b></div><div class="stat">已核销订单<b>${Number(stats.verifiedOrders || 0)}</b></div><div class="stat">累计 GMV<b>¥${Number(stats.gmv || 0).toLocaleString()}</b></div><div class="stat">佣金收入<b>¥${Number(stats.commissionIncome || 0).toLocaleString()}</b></div>`;
+    document.querySelector('#stats').innerHTML = `<div class="stat">注册用户<b>${Number(stats.registeredUsers || 0)}</b></div><div class="stat">已入驻商家<b>${Number(stats.approvedMerchants || 0)}</b></div><div class="stat">拼团活动<b>${Number(stats.groupbuys || 0)}</b></div><div class="stat">拼团成功率<b>${Math.round(Number(stats.groupbuySuccessRate || 0) * 100)}%</b></div><div class="stat">支付订单<b>${Number(stats.paidOrders || 0)}</b></div><div class="stat">已核销订单<b>${Number(stats.verifiedOrders || 0)}</b></div><div class="stat">累计 GMV<b>¥${Number(stats.gmv || 0).toLocaleString()}</b></div><div class="stat">佣金收入<b>¥${Number(stats.commissionIncome || 0).toLocaleString()}</b></div>`;
     document.querySelector('#todo').innerHTML = `<div class="queue"><span>车主认证待审核</span><b>${Number(todo.certifications || 0)}</b></div><div class="queue"><span>商家资质待审核</span><b>${Number(todo.merchants || 0)}</b></div><div class="queue"><span>退款申请待处理</span><b>${Number(todo.refunds || 0)}</b></div><div class="queue"><span>安全上报待审核</span><b>${Number(todo.safetyReports || 0)}</b></div><div class="queue"><span>客服工单待处理</span><b>${Number(todo.tickets || 0)}</b></div>`;
     document.querySelector('#risk').innerHTML = `<div class="queue"><span>订单分账待处理</span><span class="tag warning">${Number(todo.settlements || 0)} 笔</span></div><div class="queue"><span>优惠券结算待处理</span><span class="tag warning">${Number(todo.couponSettlements || 0)} 笔</span></div><div class="queue"><span>安全上报待核实</span><span class="tag ${Number(todo.safetyReports || 0) ? 'danger' : 'success'}">${Number(todo.safetyReports || 0)} 条</span></div><div class="queue"><span>地点聊天室内容治理</span><span class="tag">${state.chats.length} 个话题</span></div>`;
   };
@@ -163,7 +220,18 @@
   renderSettlements = function renderRemoteSettlements() {
     const orderRows = state.settlements || [];
     const couponRows = state.couponRedemptions || [];
-    document.querySelector('#settlementTable').innerHTML = `<table><thead><tr><th>类型</th><th>编号</th><th>商家</th><th>结算依据</th><th>金额</th><th>佣金率</th><th>应结算</th><th>状态</th><th>操作</th></tr></thead><tbody>${orderRows.map(item => `<tr><td><span class="tag">订单分账</span></td><td>${text(item.id)}</td><td>${text(item.merchant)}</td><td>${text(item.period)}</td><td>¥${item.gross}</td><td>${item.rate * 100}%</td><td>¥${item.net}</td><td>${tags[item.status] || text(item.status)}</td><td>${item.status === 'pending' ? `<button class="btn small" onclick="settle('${item.id}')">触发分账</button>` : '查看流水'}</td></tr>`).join('')}${couponRows.map(item => `<tr><td><span class="tag warning">券结算</span></td><td>${text(item.id)}</td><td>${text(item.merchant)}</td><td>${text(item.coupon)} · ${text(item.user)}</td><td>¥${item.amount}</td><td>独立核算</td><td>¥${item.amount}</td><td><span class="tag ${item.status === 'settled' ? 'success' : 'warning'}">${item.status === 'settled' ? '已结算' : '待结算'}</span></td><td>${item.status === 'pending' ? `<button class="btn small" onclick="settleCoupon('${item.id}')">触发券结算</button>` : text(item.providerId)}</td></tr>`).join('')}</tbody></table>`;
+    document.querySelector('#settlementTable').innerHTML = `<table><thead><tr><th>类型</th><th>编号</th><th>商家</th><th>结算依据</th><th>金额</th><th>佣金率</th><th>应结算</th><th>状态</th><th>操作</th></tr></thead><tbody>${orderRows.map(item => `<tr><td><span class="tag">订单分账</span></td><td>${text(item.id)}</td><td>${text(item.merchant)}</td><td>${text(item.period)}</td><td>¥${item.gross}</td><td>${item.rate * 100}%</td><td>¥${item.net}</td><td>${tags[item.status] || text(item.status)}</td><td>${['pending','failed','processing'].includes(item.status) ? `<button class="btn small" onclick="settle('${item.id}')">${item.status === 'processing' ? '刷新状态' : '触发分账'}</button>` : '查看流水'}</td></tr>`).join('')}${couponRows.map(item => `<tr><td><span class="tag warning">券结算</span></td><td>${text(item.id)}</td><td>${text(item.merchant)}</td><td>${text(item.coupon)} · ${text(item.user)}</td><td>¥${item.amount}</td><td>独立核算</td><td>¥${item.amount}</td><td><span class="tag ${item.status === 'settled' ? 'success' : 'warning'}">${item.status === 'settled' ? '已结算' : '待结算'}</span></td><td>${item.status === 'pending' ? `<button class="btn small" onclick="settleCoupon('${item.id}')">触发券结算</button>` : text(item.providerId)}</td></tr>`).join('')}</tbody></table>`;
+  };
+
+  renderCoupons = function renderRemoteCoupons() {
+    document.querySelector('#budgetForm [name=budget]').value = state.budget.budget;
+    document.querySelector('#budgetForm [name=userLimit]').value = state.budget.userLimit;
+    const issued = state.coupons.reduce((total, item) => total + item.issued, 0);
+    const used = state.coupons.reduce((total, item) => total + item.used, 0);
+    document.querySelector('#couponIssued').textContent = issued;
+    document.querySelector('#couponUsed').textContent = used;
+    document.querySelector('#couponSpend').textContent = `¥${state.budget.spent}（已承诺 ¥${state.budget.committed} / 预算 ¥${state.budget.budget}）`;
+    document.querySelector('#couponTable').innerHTML = `<table><thead><tr><th>券</th><th>归属</th><th>面额</th><th>已发放</th><th>已核销</th><th>核销率</th><th>状态</th></tr></thead><tbody>${state.coupons.map(item => `<tr><td>${item.title}</td><td>${item.owner}</td><td>¥${item.amount}</td><td>${item.issued}</td><td>${item.used}</td><td>${item.issued ? Math.round(item.used / item.issued * 100) : 0}%</td><td>${tags[item.status] || text(item.status)}</td></tr>`).join('')}</tbody></table>`;
   };
 
   renderOrders = function renderRemoteOrders() {
@@ -173,16 +241,22 @@
     document.querySelector('#orderTable').innerHTML = `<table><thead><tr><th>订单</th><th>用户</th><th>商家</th><th>商品</th><th>金额</th><th>时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${rows.map(item => `<tr><td>${text(item.id)}</td><td>${text(item.user)}</td><td>${text(item.merchant)}</td><td>${text(item.title)}</td><td>¥${item.amount}</td><td>${text(item.time)}</td><td>${tags[item.status] || text(item.status)}</td><td><button class="btn secondary small" onclick="viewOpsOrder('${text(item.rowId || item.id)}')">查看详情</button></td></tr>`).join('')}</tbody></table>`;
   };
 
+  renderRefunds = function renderRemoteRefunds() {
+    const statusText = { pending: '待审核', processing: '退款处理中', completed: '退款成功', failed: '退款失败', rejected: '已拒绝' };
+    document.querySelector('#refundTable').innerHTML = `<table><thead><tr><th>申请</th><th>订单</th><th>用户</th><th>金额</th><th>原因</th><th>时间</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.refunds.map(item => `<tr><td>${text(item.id)}</td><td>${text(item.orderId)}</td><td>${text(item.user)}</td><td>¥${item.amount}</td><td>${text(item.reason)}</td><td>${text(item.time)}</td><td><span class="tag ${item.status === 'failed' ? 'danger' : item.status === 'completed' ? 'success' : 'warning'}">${text(statusText[item.status] || item.status)}</span></td><td>${item.status === 'pending' ? `<div class="actions"><button class="btn success small" onclick="reviewRefund('${text(item.id)}',true)">同意</button><button class="btn danger small" onclick="reviewRefund('${text(item.id)}',false)">拒绝</button></div>` : ['failed', 'processing'].includes(item.status) ? `<button class="btn secondary small" onclick="retryRefund('${text(item.id)}')">重试退款</button>` : '已处理'}</td></tr>`).join('')}</tbody></table>`;
+  };
+
   window.viewOpsOrder = orderId => {
     const order = state.orders.find(item => (item.rowId || item.id) === orderId);
     if (!order) return toast('订单不存在');
     const rows = [
       ['订单编号', order.id], ['订单状态', order.status], ['用户', order.user], ['用户手机号', order.userPhone || '-'],
       ['商家', order.merchant], ['商家电话', order.merchantPhone || '-'], ['商品', order.title], ['商品 ID', order.productId || '-'],
-      ['数量', order.quantity || 1], ['商品金额', `¥${Number(order.originAmount || order.amount).toFixed(2)}`],
+      ['成交档位', order.tier], ['数量', order.quantity || 1], ['商品金额', `¥${Number(order.originAmount || order.amount).toFixed(2)}`],
       ['优惠抵扣', `¥${Number(order.discountAmount || 0).toFixed(2)}`], ['实付金额', `¥${Number(order.amount || 0).toFixed(2)}`],
       ['支付渠道', order.paymentProvider || '-'], ['支付流水', order.transactionId || '-'], ['下单时间', order.time || '-'],
-      ['支付时间', order.paidAt || '-'], ['有效期', order.expiresAt || '-'], ['核销时间', order.verifiedAt || '-'], ['核销码', order.verifyCode || '-']
+      ['支付时间', order.paidAt || '-'], ['有效期', order.expiresAt || '-'], ['核销时间', order.verifiedAt || '-'], ['核销码', order.verifyCode || '-'],
+      ['核销人员', order.verifiedBy || '-'], ['核销坐标', order.verifiedLng == null ? '-' : `${order.verifiedLng}, ${order.verifiedLat}`]
     ];
     document.querySelector('#opsOrderDetailBody').innerHTML = `<div class="detail-grid">${rows.map(([label, value], index) => `<div class="detail-row ${index === 6 || index === 13 ? 'full' : ''}"><label>${text(label)}</label><b>${text(value)}</b></div>`).join('')}</div>`;
     document.querySelector('#opsOrderDetailModal').classList.remove('hidden');
@@ -215,7 +289,50 @@
   };
 
   renderInvites = function renderRemoteInvites() {
-    document.querySelector('#inviteTable').innerHTML = `<table><thead><tr><th>排名</th><th>邀请人</th><th>邀请</th><th>注册</th><th>完成首单</th><th>奖励</th><th>操作</th></tr></thead><tbody>${state.invites.sort((a, b) => b.registered - a.registered).map((item, index) => `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.invited}</td><td>${item.registered}</td><td>${item.ordered}</td><td>${text(item.reward)}</td><td>${item.pending ? `<button class="btn small" onclick="grant('${item.id}')">发放奖励</button>` : '查看记录'}</td></tr>`).join('')}</tbody></table>`;
+    document.querySelector('#inviteTable').innerHTML = `<table><thead><tr><th>排名</th><th>邀请人</th><th>邀请</th><th>注册</th><th>完成首单</th><th>奖励</th><th>操作</th></tr></thead><tbody>${state.invites.sort((a, b) => b.registered - a.registered).map((item, index) => `<tr><td>${index + 1}</td><td>${item.name}</td><td>${item.invited}</td><td>${item.registered}</td><td>${item.ordered}</td><td>${text(item.reward)}</td><td><div class="actions"><button class="btn secondary small" onclick="viewInviteRecords('${item.id}')">查看记录</button>${item.pending ? `<button class="btn small" onclick="grant('${item.pendingId}')">发放奖励</button>` : ''}</div></td></tr>`).join('')}</tbody></table>`;
+  };
+
+  window.viewInviteRecords = inviterId => {
+    const item = state.invites.find(row => row.id === inviterId);
+    if (!item) return toast('邀请记录不存在');
+    const sourceNames = { link: '分享链接', qrcode: '邀请二维码', phone: '手机号兜底', merchant: '商家推广' };
+    const statusNames = { pending: '待发放', issued: '已发放', none: '无奖励' };
+    document.querySelector('#inviteDetailTitle').textContent = `${item.name} · 邀请奖励记录`;
+    document.querySelector('#inviteDetailBody').innerHTML = (item.records || []).map(record => `<div class="invite-record"><b>${record.invitee}</b> · ${text(sourceNames[record.source] || record.source)}<div class="muted">绑定 ${record.boundAt} · 首单 ${record.firstOrderAt}</div><div>邀请状态：${text(record.status)} · 奖励：${text(statusNames[record.rewardStatus] || record.rewardStatus)} ¥${record.rewardValue}</div></div>`).join('') || '<div class="muted">暂无邀请记录</div>';
+    document.querySelector('#inviteDetailModal').classList.remove('hidden');
+  };
+
+  window.closeInviteDetail = () => document.querySelector('#inviteDetailModal').classList.add('hidden');
+
+  renderGrowth = function renderRemoteGrowth() {
+    document.querySelector('#growthFields').innerHTML = growthRules.map(rule => `<div class="growth-rule"><div><b>${text(rule.name)}</b><div class="muted">${text(rule.ruleKey)}</div></div><div class="field"><label>分值/权重</label><input class="control" name="points_${text(rule.id)}" type="number" min="0" value="${Number(rule.points)}"></div><div class="field"><label>每日奖励上限（分）</label><input class="control" name="limit_${text(rule.id)}" type="number" min="0" value="${rule.dailyLimit == null ? '' : Number(rule.dailyLimit)}" placeholder="不限"></div><div class="field"><label><input name="enabled_${text(rule.id)}" type="checkbox" ${rule.enabled ? 'checked' : ''}> 启用</label></div></div>`).join('');
+  };
+
+  renderChats = function renderRemoteChats() {
+    document.querySelector('#chatTable').innerHTML = `<table><thead><tr><th>话题</th><th>地点</th><th>参与人数</th><th>消息</th><th>待处理举报</th><th>状态</th><th>操作</th></tr></thead><tbody>${state.chats.map(item => `<tr><td>${item.name}<br><span class="muted">${text(item.id)}</span></td><td>${item.location}</td><td>${item.online}</td><td>${item.messages.length}</td><td><span class="tag ${item.reports ? 'danger' : ''}">${item.reports}</span></td><td>${tags[item.status] || text(item.status)}</td><td><button class="btn ${item.reports ? '' : 'secondary'} small" onclick="viewTopicDetail('${item.id}')">查看内容</button></td></tr>`).join('')}</tbody></table>`;
+  };
+
+  window.viewTopicDetail = topicId => {
+    const topic = state.chats.find(item => item.id === topicId);
+    if (!topic) return toast('话题不存在');
+    window.activeTopicId = topicId;
+    document.querySelector('#topicDetailTitle').textContent = `${topic.name} · ${topic.location}`;
+    const reports = (topic.reportItems || []).map(report => `<div class="report-content"><b>${report.user} 举报 · ${report.time}</b><div>${report.evidence || report.title}</div><div class="muted">工单 ${text(report.id)}${report.messageId ? ` · 关联消息 ${text(report.messageId)}` : ''}</div></div>`).join('') || '<div class="muted">暂无待处理举报</div>';
+    const messages = (topic.messages || []).map(message => `<div class="topic-content"><b>${message.sender} · ${message.time} · ${text(message.type)}</b>${message.content}</div>`).join('') || '<div class="muted">暂无话题消息</div>';
+    document.querySelector('#topicDetailBody').innerHTML = `<div class="ticket-meta">状态：${text(topic.status)} · 参与 ${topic.online} 人 · 待处理举报 ${topic.reports} 条</div><section class="topic-section"><h4>举报证据</h4>${reports}</section><section class="topic-section"><h4>话题内容</h4>${messages}</section>`;
+    document.querySelector('#topicDetailActions').innerHTML = `${topic.status !== 'archived' ? `<button class="btn secondary" onclick="moderateTopicDetail('archived')">归档</button>` : `<button class="btn secondary" onclick="moderateTopicDetail('active')">恢复</button>`}<button class="btn danger" onclick="moderateTopicDetail('removed')">下架违规话题</button>`;
+    document.querySelector('#topicDetailModal').classList.remove('hidden');
+  };
+
+  window.closeTopicDetail = () => {
+    window.activeTopicId = '';
+    document.querySelector('#topicDetailModal').classList.add('hidden');
+  };
+
+  window.moderateTopicDetail = async status => {
+    const id = window.activeTopicId;
+    closeTopicDetail();
+    await moderateChat(id, status);
   };
 
   renderSupport = function renderRemoteSupport() {
@@ -227,7 +344,9 @@
     if (!ticket) return toast('工单不存在');
     window.activeOpsTicketId = ticketId;
     document.querySelector('#supportTicketTitle').textContent = `${ticket.type} · ${ticket.title}`;
-    document.querySelector('#supportTicketBody').innerHTML = `<div class="ticket-meta"><b>${ticket.user}</b> · ${ticket.userPhone || '-'}<br><span class="muted">工单 ${ticket.id}${ticket.orderId ? ` · 订单 ${text(ticket.orderId)}` : ''} · ${ticket.time}</span></div>${(ticket.messages || []).map(message => `<div class="ticket-message ${message.senderType === 'ops' ? 'ops' : ''}"><b>${message.senderType === 'ops' ? '运营回复' : message.senderType === 'system' ? '系统' : ticket.user} · ${message.time}</b>${message.content}</div>`).join('') || '<div class="muted">暂无对话内容</div>'}`;
+    const targetNames = { user: '被投诉用户', poi_topic: '地点话题', order: '关联订单' };
+    const target = ticket.targetId ? `<br><span class="muted">${text(targetNames[ticket.targetType] || '关联对象')} ${text(ticket.targetId)}${ticket.messageId ? ` · 消息 ${text(ticket.messageId)}` : ''}</span>` : '';
+    document.querySelector('#supportTicketBody').innerHTML = `<div class="ticket-meta"><b>${ticket.user}</b> · ${ticket.userPhone || '-'}<br><span class="muted">工单 ${ticket.id}${ticket.orderId ? ` · 订单 ${text(ticket.orderId)}` : ''} · ${ticket.time}</span>${target}</div>${(ticket.messages || []).map(message => `<div class="ticket-message ${message.senderType === 'ops' ? 'ops' : ''}"><b>${message.senderType === 'ops' ? '运营回复' : message.senderType === 'system' ? '系统' : ticket.user} · ${message.time}</b>${message.content}</div>`).join('') || '<div class="muted">暂无对话内容</div>'}`;
     document.querySelector('#supportTicketReply').value = '';
     document.querySelector('#supportTicketModal').classList.remove('hidden');
   };
@@ -275,7 +394,10 @@
   window.adjustLevel = async id => {
     const level = prompt('输入新等级：bronze / silver / gold / diamond', 'gold');
     if (!['bronze', 'silver', 'gold', 'diamond'].includes(level)) return;
-    try { await call(`/api/ops/merchants/${id}/level`, { method: 'PUT', body: { level } }); await loadRemote(); toast('商家等级已调整'); } catch (error) { toast(error.message); }
+    const merchant = state.merchants.find(item => item.id === id);
+    const score = Number(prompt('输入综合得分（0-100）', merchant ? merchant.score : 80));
+    if (!Number.isFinite(score) || score < 0 || score > 100) return toast('得分必须在0至100之间');
+    try { await call(`/api/ops/merchants/${id}/level`, { method: 'PUT', body: { level, score } }); await loadRemote(); toast('商家等级已调整'); } catch (error) { toast(error.message); }
   };
 
   window.interveneGroupbuy = async (id, outcome) => {
@@ -288,6 +410,10 @@
     const reason = prompt('填写审核说明', approved ? '符合退款条件' : '不符合退款规则');
     if (!reason) return;
     try { await call(`/api/ops/refunds/${id}`, { method: 'PUT', body: { approved, reason } }); await loadRemote(); toast(approved ? '退款已提交原路退回' : '退款申请已拒绝'); } catch (error) { toast(error.message); }
+  };
+
+  window.retryRefund = async id => {
+    try { await call(`/api/ops/refunds/${id}/retry`, { method: 'POST', body: {} }); await loadRemote(); toast('退款重试已提交'); } catch (error) { toast(error.message); }
   };
 
   window.settle = async id => {
@@ -327,7 +453,17 @@
     event.preventDefault();
     const values = Object.fromEntries(new FormData(event.target));
     try {
-      await Promise.all(growthRules.map(rule => call(`/api/ops/growth-rules/${rule.id}`, { method: 'PATCH', body: { points: Number(values[rule.name]) } })));
+      await Promise.all(growthRules.map(rule => {
+        const limit = values[`limit_${rule.id}`];
+        return call(`/api/ops/growth-rules/${rule.id}`, {
+          method: 'PATCH',
+          body: {
+            points: Number(values[`points_${rule.id}`]),
+            dailyLimit: limit === '' || limit === undefined ? null : Number(limit),
+            enabled: values[`enabled_${rule.id}`] === 'on'
+          }
+        });
+      }));
       await loadRemote(); toast('同路值规则已保存');
     } catch (error) { toast(error.message); }
   };
@@ -357,25 +493,28 @@
     event.preventDefault();
     const form = Object.fromEntries(new FormData(event.target));
     const value = {
-      bronze: { minScore: 0, commissionRate: Number(form.bronze) / 100 },
-      silver: { minScore: 75, commissionRate: Number(form.silver) / 100 },
-      gold: { minScore: 90, commissionRate: Number(form.gold) / 100 },
-      diamond: { minScore: 98, commissionRate: Number(form.diamond) / 100 }
+      bronze: { minScore: Number(form.bronzeScore), commissionRate: Number(form.bronzeRate) / 100, benefit: form.bronzeBenefit.trim() },
+      silver: { minScore: Number(form.silverScore), commissionRate: Number(form.silverRate) / 100, benefit: form.silverBenefit.trim() },
+      gold: { minScore: Number(form.goldScore), commissionRate: Number(form.goldRate) / 100, benefit: form.goldBenefit.trim() },
+      diamond: { minScore: Number(form.diamondScore), commissionRate: Number(form.diamondRate) / 100, benefit: form.diamondBenefit.trim() }
     };
+    const scores = ['bronze', 'silver', 'gold', 'diamond'].map(level => value[level].minScore);
+    if (scores.some((score, index) => index && score <= scores[index - 1])) return toast('等级起始分必须逐级递增');
+    if (Object.values(value).some(rule => !rule.benefit || rule.commissionRate < 0 || rule.commissionRate > 1)) return toast('请完整填写佣金率和等级权益');
     try { await call('/api/ops/settings/merchant_assessment', { method: 'PUT', body: { value } }); await loadRemote(); toast('商家考核规则已保存'); } catch (error) { toast(error.message); }
   };
 
   document.querySelector('#autoReplyForm').onsubmit = async event => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(event.target));
-    try { await call('/api/ops/settings/support_auto_reply', { method: 'PUT', body: { value: { enabled: true, text: form.text } } }); await loadRemote(); toast('自动回复已保存'); } catch (error) { toast(error.message); }
+    try { await call('/api/ops/settings/support_auto_reply', { method: 'PUT', body: { value: { enabled: event.target.enabled.checked, text: form.text } } }); await loadRemote(); toast('自动回复已保存'); } catch (error) { toast(error.message); }
   };
 
   window.resetState = () => loadRemote().then(() => toast('数据已刷新')).catch(error => toast(error.message));
 
   async function boot() {
     try {
-      if (!token && params.has('preview')) await login('ops@tongdao.cn', 'tongdao2026');
+      if (!token && params.has('preview')) await demoLogin();
       if (token) await loadRemote();
     } catch (error) {
       if (error.code === 'AUTH_REQUIRED') showLogin('登录已失效，请重新登录');

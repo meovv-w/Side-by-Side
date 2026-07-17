@@ -7,6 +7,7 @@
   let merchant = null;
   let dashboard = null;
   let promotion = null;
+  let promotionShare = null;
   let assessment = null;
   let editingProductId = null;
 
@@ -91,12 +92,13 @@
       orders: orders.map(order => ({
         id: order.orderNo, rowId: order.id, user: order.user && order.user.nickname || order.userId,
         userPhone: order.user && order.user.phone || '', userVehicle: order.user && order.user.vehicleModel || '',
-        title: order.product && order.product.name || order.productId, amount: Number(order.paidAmount),
+        title: order.product && order.product.name || order.productId, amount: Number(order.paidAmount), tier: orderTier(order),
         productId: order.productId, quantity: Number(order.quantity || 1), originAmount: Number(order.originAmount),
         discountAmount: Number(order.discountAmount), paymentProvider: order.paymentProvider || '-',
         status: order.status === 'verified' ? 'used' : order.status === 'refund_pending' ? 'refund' : order.status,
         code: order.verifyCode || '-', time: formatTime(order.createdAt), paidAt: formatTime(order.paidAt),
-        expiresAt: formatTime(order.expiresAt), verifiedAt: formatTime(order.verifiedAt), operator: order.verifiedBy
+        expiresAt: formatTime(order.expiresAt), verifiedAt: formatTime(order.verifiedAt), operator: order.verifiedBy,
+        verifiedLng: order.verifiedLng, verifiedLat: order.verifiedLat
       })),
       settlements: settlementData.items.map(item => ({
         id: item.id, period: `${formatTime(item.periodStart)} 至 ${formatTime(item.periodEnd)}`,
@@ -129,6 +131,20 @@
       document.querySelector('#promotionCode').textContent = promotion.promotionCode || '--';
       document.querySelector('#promotionStats').textContent = `累计拉新 ${promotion.registered} 人 · 完成首单 ${promotion.firstOrders} 人`;
     }
+    const promotionQr = document.querySelector('#promotionQr');
+    const promotionPath = document.querySelector('#promotionPath');
+    const copyPromotion = document.querySelector('#copyPromotionLink');
+    if (promotionShare) {
+      promotionQr.src = promotionShare.qrCode || '';
+      promotionQr.classList.toggle('hidden', !promotionShare.qrCode);
+      promotionPath.textContent = promotionShare.miniProgramPath || promotionShare.url || '';
+      copyPromotion.classList.remove('hidden');
+    } else {
+      promotionQr.classList.add('hidden');
+      promotionQr.removeAttribute('src');
+      promotionPath.textContent = '';
+      copyPromotion.classList.add('hidden');
+    }
     if (assessment) {
       const values = document.querySelectorAll('#assessment .stat b');
       const names = { bronze: '铜牌', silver: '银牌', gold: '金牌', diamond: '钻石' };
@@ -138,8 +154,13 @@
       values[3].textContent = `${(assessment.complaintRate * 100).toFixed(1)}%`;
       const progress = document.querySelector('#assessment progress');
       const description = document.querySelector('#assessment .panel p');
-      progress.value = Math.max(0, Math.min(100, Number(assessment.score || 0)));
-      description.textContent = `当前考核分 ${assessment.score}，平台佣金率 ${(Number(assessment.commissionRate || 0) * 100).toFixed(1)}%。等级与权益按运营后台规则实时计算。`;
+      progress.value = Math.max(0, Math.min(100, Number(assessment.progress || 0)));
+      const currentBenefit = assessment.currentRule && assessment.currentRule.benefit || '标准商家权益';
+      const nextName = assessment.nextLevel && names[assessment.nextLevel];
+      const nextScore = assessment.nextRule && Number(assessment.nextRule.minScore);
+      description.textContent = nextName
+        ? `当前权益：${currentBenefit}；平台佣金率 ${(Number(assessment.commissionRate || 0) * 100).toFixed(1)}%。达到 ${nextScore} 分可晋升${nextName}，还差 ${Math.max(0, nextScore - Number(assessment.score))} 分。`
+        : `当前为最高等级，权益：${currentBenefit}；平台佣金率 ${(Number(assessment.commissionRate || 0) * 100).toFixed(1)}%。`;
     }
     const rewardPool = document.querySelector('#couponForm [name=rewardPool]');
     if (rewardPool) rewardPool.checked = Boolean(merchant && merchant.rewardPoolEnabled);
@@ -152,14 +173,29 @@
   }
 
   function formatTime(value) {
-    return value ? String(value).replace('T', ' ').replace(/\.000Z$|Z$/g, '') : '-';
+    if (!value) return '-';
+    const raw = String(value);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return raw;
+    const source = /^\d{4}-\d{2}-\d{2}[ T]\d{2}:\d{2}/.test(raw) && !/[zZ]|[+-]\d\d:?\d\d$/.test(raw)
+      ? `${raw.replace(' ', 'T')}Z`
+      : raw;
+    const date = new Date(source);
+    if (!Number.isFinite(date.getTime())) return raw.replace('T', ' ').replace(/\.\d{3}Z$|Z$/g, '');
+    const pad = number => String(number).padStart(2, '0');
+    return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
+  }
+
+  function orderTier(order) {
+    const unitPrice = Number(order.originAmount || 0) / Math.max(1, Number(order.quantity || 1));
+    const tier = (order.product && order.product.tiers || []).find(item => Math.abs(Number(item.price) - unitPrice) < 0.011);
+    return tier ? `${tier.people}人档 · ¥${Number(tier.price)}` : `成交单价 ¥${unitPrice.toFixed(2)}`;
   }
 
   parseTiers = function parseRemoteTiers(value, origin) {
     const tiers = value.split(/[,，]/).map(item => item.trim().split(':').map(Number));
     if (!tiers.length || tiers.length > 5 || tiers.some(item => item.length < 2 || !item[0] || !item[1])) throw new Error('阶梯价格格式不正确');
     if (tiers[0][0] !== 1) throw new Error('第一档必须是1人价格');
-    for (let index = 1; index < tiers.length; index += 1) if (tiers[index][0] <= tiers[index - 1][0] || tiers[index][1] > tiers[index - 1][1]) throw new Error('人数需递增，价格不能上升');
+    for (let index = 1; index < tiers.length; index += 1) if (tiers[index][0] <= tiers[index - 1][0] || tiers[index][1] >= tiers[index - 1][1]) throw new Error('人数需递增，价格必须递减');
     if (tiers[0][1] > origin) throw new Error('首档价格不能高于原价');
     return tiers;
   };
@@ -180,7 +216,7 @@
   renderOrders = function renderRemoteOrders() {
     const filter = document.querySelector('#orderFilter').value || 'all';
     const rows = state.orders.filter(order => filter === 'all' || order.status === filter);
-    document.querySelector('#orderTable').innerHTML = `<table><thead><tr><th>订单</th><th>用户</th><th>商品</th><th>实付</th><th>时间</th><th>状态</th><th>核销码</th><th>操作</th></tr></thead><tbody>${rows.map(order => `<tr><td>${escapeHtml(order.id)}</td><td>${escapeHtml(order.user)}</td><td>${escapeHtml(order.title)}</td><td>¥${order.amount}</td><td>${escapeHtml(order.time)}</td><td>${status(order.status)}</td><td>${escapeHtml(order.code)}</td><td><button class="btn secondary small" onclick="viewMerchantOrder('${escapeHtml(order.rowId || order.id)}')">查看详情</button></td></tr>`).join('')}</tbody></table>`;
+    document.querySelector('#orderTable').innerHTML = `<table><thead><tr><th>订单</th><th>用户</th><th>商品</th><th>成交档位</th><th>实付</th><th>时间</th><th>状态</th><th>核销码</th><th>操作</th></tr></thead><tbody>${rows.map(order => `<tr><td>${escapeHtml(order.id)}</td><td>${escapeHtml(order.user)}</td><td>${escapeHtml(order.title)}</td><td>${escapeHtml(order.tier)}</td><td>¥${order.amount}</td><td>${escapeHtml(order.time)}</td><td>${status(order.status)}</td><td>${escapeHtml(order.code)}</td><td><button class="btn secondary small" onclick="viewMerchantOrder('${escapeHtml(order.rowId || order.id)}')">查看详情</button></td></tr>`).join('')}</tbody></table>`;
   };
 
   window.viewMerchantOrder = orderId => {
@@ -188,11 +224,12 @@
     if (!order) return toast('订单不存在');
     const rows = [
       ['订单编号', order.id], ['订单状态', order.status], ['用户', order.user], ['用户手机号', order.userPhone || '-'],
-      ['用户车辆', order.userVehicle || '-'], ['商品', order.title], ['商品 ID', order.productId || '-'], ['数量', order.quantity || 1],
+      ['用户车辆', order.userVehicle || '-'], ['商品', order.title], ['商品 ID', order.productId || '-'], ['成交档位', order.tier], ['数量', order.quantity || 1],
       ['商品金额', `¥${Number(order.originAmount || order.amount).toFixed(2)}`], ['优惠抵扣', `¥${Number(order.discountAmount || 0).toFixed(2)}`],
       ['实付金额', `¥${Number(order.amount || 0).toFixed(2)}`], ['支付渠道', order.paymentProvider || '-'],
       ['下单时间', order.time || '-'], ['支付时间', order.paidAt || '-'], ['有效期', order.expiresAt || '-'],
-      ['核销时间', order.verifiedAt || '-'], ['核销码', order.code || '-'], ['核销人员', order.operator || '-']
+      ['核销时间', order.verifiedAt || '-'], ['核销码', order.code || '-'], ['核销人员', order.operator || '-'],
+      ['核销坐标', order.verifiedLng == null ? '-' : `${order.verifiedLng}, ${order.verifiedLat}`]
     ];
     document.querySelector('#orderDetailBody').innerHTML = `<div class="detail-grid">${rows.map(([label, value], index) => `<div class="detail-row ${index === 5 ? 'full' : ''}"><label>${escapeHtml(label)}</label><b>${escapeHtml(value)}</b></div>`).join('')}</div>`;
     document.querySelector('#orderDetailModal').classList.remove('hidden');
@@ -208,6 +245,11 @@
     const rows = state.orders.filter(order => order.status === 'used');
     const couponRows = state.couponRedemptions || [];
     document.querySelector('#verifyTable').innerHTML = `<table><thead><tr><th>类型</th><th>编号</th><th>商品/优惠券</th><th>用户</th><th>金额</th><th>核销时间</th><th>结算状态</th></tr></thead><tbody>${rows.map(order => `<tr><td><span class="tag">订单</span></td><td>${escapeHtml(order.id)}</td><td>${escapeHtml(order.title)}</td><td>${escapeHtml(order.user)}</td><td>¥${order.amount}</td><td>${escapeHtml(order.verifiedAt || '-')}</td><td><span class="tag success">已分账</span></td></tr>`).join('')}${couponRows.map(item => `<tr><td><span class="tag warning">优惠券</span></td><td>${escapeHtml(item.id)}</td><td>${escapeHtml(item.title)}</td><td>${escapeHtml(item.user)}</td><td>¥${item.amount}</td><td>${escapeHtml(item.time)}</td><td><span class="tag ${item.status === 'settled' ? 'success' : 'warning'}">${item.status === 'settled' ? '已结算' : '待平台结算'}</span></td></tr>`).join('')}</tbody></table>`;
+  };
+
+  renderSettlement = function renderRemoteSettlement() {
+    const labels = { pending: '待触发', processing: '处理中', settled: '已结算', completed: '已结算', failed: '失败' };
+    document.querySelector('#settlementTable').innerHTML = `<table><thead><tr><th>结算单</th><th>结算周期</th><th>金额</th><th>状态</th><th>到账时间</th></tr></thead><tbody>${state.settlements.map(item => `<tr><td>${escapeHtml(item.id)}</td><td>${escapeHtml(item.period)}</td><td>¥${item.amount}</td><td><span class="tag ${['settled', 'completed'].includes(item.status) ? 'success' : item.status === 'failed' ? 'danger' : 'warning'}">${escapeHtml(labels[item.status] || item.status)}</span></td><td>${escapeHtml(item.time || '-')}</td></tr>`).join('') || '<tr><td colspan="5">暂无结算记录</td></tr>'}</tbody></table>`;
   };
 
   document.querySelector('#sendMerchantCode').onclick = async () => {
@@ -231,12 +273,13 @@
     try {
       const licenseFile = event.target.license.files[0];
       const license = licenseFile ? await upload(licenseFile, 'merchant-licenses') : null;
+      const location = await geocodeAddress(form.address);
       if (!merchant) {
         if (!license) throw new Error('首次入驻必须上传营业执照');
-        await call('/api/merchant/apply', { method: 'POST', body: { name: form.name, phone: form.phone, address: form.address, description: form.description, businessHours: form.hours, licensePhoto: license.url, qualificationFiles: [] } });
+        await call('/api/merchant/apply', { method: 'POST', body: { name: form.name, phone: form.phone, address: form.address, description: form.description, businessHours: form.hours, licensePhoto: license.url, qualificationFiles: [], ...location } });
         toast('入驻资料已提交');
       } else {
-        const changes = { name: form.name, phone: form.phone, address: form.address, description: form.description, businessHours: form.hours };
+        const changes = { name: form.name, phone: form.phone, address: form.address, description: form.description, businessHours: form.hours, ...location };
         if (license) changes.licensePhoto = license.url;
         await call('/api/merchant/profile/changes', { method: 'POST', body: changes });
         toast('资料变更已提交运营复核');
@@ -244,6 +287,14 @@
       await loadRemote();
     } catch (error) { toast(error.message); }
   };
+
+  async function geocodeAddress(address) {
+    const result = await call(`/api/map/geocode?address=${encodeURIComponent(address)}`);
+    const first = result.geocodes && result.geocodes[0];
+    const values = first && String(first.location || '').split(',').map(Number);
+    if (!values || values.length !== 2 || !values.every(Number.isFinite)) throw new Error('无法定位店铺地址，请填写更完整的省市区和门牌号');
+    return { lng: values[0], lat: values[1] };
+  }
 
   document.querySelector('#productForm').onsubmit = async event => {
     event.preventDefault();
@@ -298,6 +349,28 @@
     } catch (error) { toast(error.message); }
   };
 
+  document.querySelector('#verifyScanner').onchange = async event => {
+    const file = event.target.files && event.target.files[0];
+    if (!file) return;
+    try {
+      if (!('BarcodeDetector' in window)) throw new Error('当前浏览器不支持二维码识别，请直接输入券码');
+      const detector = new BarcodeDetector({ formats: ['qr_code'] });
+      const bitmap = await createImageBitmap(file);
+      const codes = await detector.detect(bitmap);
+      bitmap.close();
+      if (!codes.length) throw new Error('未识别到二维码，请重新拍摄或输入券码');
+      const raw = String(codes[0].rawValue || '').trim();
+      const order = raw.match(/^TDORDER:(.+)$/i);
+      const coupon = raw.match(/^TDCOUPON:(.+)$/i);
+      const value = order ? order[1] : coupon ? coupon[1] : raw;
+      const form = document.querySelector('#verifyForm');
+      form.code.value = value;
+      form.type.value = coupon || /^CP/i.test(value) ? 'coupon' : 'order';
+      toast('二维码已识别，请确认核销');
+    } catch (error) { toast(error.message); }
+    finally { event.target.value = ''; }
+  };
+
   document.querySelector('#bankForm').onsubmit = async event => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(event.target));
@@ -320,7 +393,11 @@
   document.querySelector('#rescueForm').onsubmit = async event => {
     event.preventDefault();
     const form = Object.fromEntries(new FormData(event.target));
-    try { await call('/api/merchant/rescue', { method: 'PUT', body: { enabled: true, services: form.type.split('/').filter(Boolean), radiusKm: Number(form.radius), phone: form.phone, businessOpen: form.open === 'true' } }); toast('救援服务信息已更新'); await loadRemote(); } catch (error) { toast(error.message); }
+    try {
+      const result = await call('/api/merchant/rescue', { method: 'PUT', body: { enabled: true, services: form.type.split('/').filter(Boolean), radiusKm: Number(form.radius), phone: form.phone, businessOpen: form.open === 'true' } });
+      toast(result.rescueReviewStatus === 'pending' ? '救援服务已提交运营审核' : '救援服务信息已更新');
+      await loadRemote();
+    } catch (error) { toast(error.message); }
   };
 
   document.querySelector('#supportForm').onsubmit = async event => {
@@ -333,6 +410,18 @@
     try { await Promise.all(state.notices.filter(item => !item.read).map(item => call(`/api/notifications/${item.id}/read`, { method: 'PUT', body: {} }))); await loadRemote(); toast('已全部标记为已读'); } catch (error) { toast(error.message); }
   };
   window.copyPromo = () => { navigator.clipboard && navigator.clipboard.writeText(promotion && promotion.promotionCode || ''); toast('推广码已复制'); };
+  window.generateMerchantPromotion = async () => {
+    try {
+      promotionShare = await call('/api/merchant/promotion/share', { method: 'POST', body: {} });
+      updateRemoteUi();
+      toast('商家推广卡已生成');
+    } catch (error) { toast(error.message); }
+  };
+  window.copyPromotionLink = () => {
+    const value = promotionShare && (promotionShare.miniProgramPath || promotionShare.url) || '';
+    if (navigator.clipboard && value) navigator.clipboard.writeText(value);
+    toast(value ? '推广链接已复制' : '请先生成推广卡');
+  };
   window.resetState = () => loadRemote().then(() => toast('数据已刷新')).catch(error => toast(error.message));
 
   const originalRenderForms = renderForms;
@@ -340,7 +429,10 @@
     originalRenderForms();
     const card = state.bank || {};
     const bankForm = document.querySelector('#bankForm');
-    bankForm.bank.value = card.bank || ''; bankForm.card.value = card.card || card.maskedCard || ''; bankForm.wechatReceiver.value = card.wechatReceiver || '';
+    bankForm.bank.value = card.bank || '';
+    bankForm.card.value = '';
+    bankForm.card.placeholder = card.maskedCard ? `已绑定 ${card.maskedCard}，留空不修改` : '请输入银行卡号';
+    bankForm.wechatReceiver.value = card.wechatReceiver || '';
   };
 
   async function boot() {

@@ -7,7 +7,15 @@ Page({
 
   onLoad(options) {
     this.setData({ id: options.id || '' });
+    this.unsubscribeRealtime = api.subscribeRealtime(event => {
+      const message = event && event.data || {};
+      const type = message.conversation_type || message.conversationType;
+      const conversationId = message.conversation_id || message.conversationId || '';
+      if (event && event.event === 'message' && type === 'private' && conversationId.split(':').includes(this.data.id)) this.load();
+    });
   },
+
+  onUnload() { if (this.unsubscribeRealtime) this.unsubscribeRealtime(); },
 
   onShow() { this.load(); },
 
@@ -45,6 +53,40 @@ Page({
     api.setBlocked(this.data.id, blocked).then(() => {
       wx.showToast({ title: blocked ? '已加入黑名单' : '已解除黑名单' });
       this.load();
+    });
+  },
+
+  menu() {
+    wx.showActionSheet({
+      itemList: [this.data.blocked ? '解除黑名单' : '加入黑名单', '投诉该用户'],
+      success: result => {
+        if (result.tapIndex === 0) this.block();
+        if (result.tapIndex === 1) this.report();
+      }
+    });
+  },
+
+  report() {
+    wx.showModal({
+      title: '隐私与骚扰投诉',
+      editable: true,
+      placeholderText: '请说明骚扰内容、发生时间或其他证据',
+      confirmText: '提交投诉',
+      success: modal => {
+        if (!modal.confirm) return;
+        const reason = String(modal.content || '').trim();
+        if (!reason) return wx.showToast({ title: '请填写投诉详情', icon: 'none' });
+        api.reportUser(this.data.id, reason).then(result => {
+          if (!result.ok) return wx.showToast({ title: result.message || '提交失败', icon: 'none' });
+          wx.showModal({
+            title: '投诉已提交',
+            content: '运营会查看投诉详情和关联用户。是否同时加入黑名单？',
+            confirmText: '加入黑名单',
+            cancelText: '暂不',
+            success: choice => { if (choice.confirm && !this.data.blocked) this.block(); }
+          });
+        });
+      }
     });
   },
 

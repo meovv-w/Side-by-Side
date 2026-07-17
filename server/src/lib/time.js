@@ -23,4 +23,8 @@ function timestamp(value) {
   return asDate(value).getTime();
 }
 
-module.exports = { dateTime, addTime, isPast, timestamp };
+function dateKey(value = Date.now(), offsetMinutes = 480) {
+  return new Date(timestamp(value) + offsetMinutes * 60000).toISOString().slice(0, 10);
+}
+
+module.exports = { dateTime, addTime, isPast, timestamp, dateKey };

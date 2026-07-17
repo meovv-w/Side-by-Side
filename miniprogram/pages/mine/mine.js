@@ -41,6 +41,7 @@ Page({
         social: res.data.social || {},
         currentTrip,
         avatarText: (user.nickname || '同').slice(0, 1),
+        certStatusText: ({ approved: '车主已认证', pending: '认证审核中', rejected: '认证未通过', none: '尚未认证' })[user.ownerCertStatus] || '尚未认证',
         growthProgress: Math.min(100, Math.round(Number(user.growth || 0) / 10000 * 100)),
         levelTitle: levelTitles[Math.max(0, Math.min(levelTitles.length - 1, Number(user.level || 1) - 1))]
       });

@@ -100,13 +100,13 @@ async function buildApp(options = {}) {
 
   const common = createCommonService({ repository, hub, clock });
   const auth = createAuthService({ repository, cache, providers, config, common });
-  const users = createUserService({ repository, cache, providers, config, common });
+  const users = createUserService({ repository, cache, providers, config, common, clock });
   const trips = createTripService({ repository, providers, common, clock });
   const chat = createChatService({ repository, providers, common, clock });
   const commerce = createCommerceService({ repository, providers, common, clock });
-  const merchant = createMerchantService({ repository, common, config });
-  const ops = createOpsService({ repository, providers, common, commerce });
-  const maps = createMapService({ providers, trips, config });
+  const merchant = createMerchantService({ repository, common, config, clock });
+  const ops = createOpsService({ repository, providers, common, commerce, chat, clock });
+  const maps = createMapService({ providers, trips, chat, repository, config, common });
   app.decorate('services', { common, auth, users, trips, chat, commerce, merchant, ops, maps });
 
   app.setNotFoundHandler((request, reply) => reply.code(404).send({ ok: false, error: { code: 'NOT_FOUND', message: '接口不存在' } }));

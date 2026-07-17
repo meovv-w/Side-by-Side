@@ -109,6 +109,30 @@ const seed = {
       createdAt: now
     },
     {
+      _id: 'u_near_001',
+      openid: 'mock-near-001',
+      nickname: '晴川',
+      avatar: '',
+      role: 'owner',
+      phone: '13800000007',
+      ownerCertStatus: 'approved',
+      vehicleModel: '领克 08',
+      vehicleNo: '浙C8Q318',
+      growth: 3500,
+      level: 3,
+      creditScore: 4.9,
+      inviteCode: 'TDNEAR',
+      discoverable: true,
+      bio: '轻装露营，按限速稳定行驶。',
+      distanceKm: 7600,
+      teamCount: 18,
+      companionCount: 7,
+      followerCount: 25,
+      followingCount: 19,
+      badges: ['轻野领队'],
+      createdAt: now
+    },
+    {
       _id: 'u_guest_001',
       openid: 'mock-guest-001',
       nickname: '小北',
@@ -241,6 +265,40 @@ const seed = {
         { userId: 'u_mock_001', nickname: '林小路', latitude: 30.2268, longitude: 120.2105 }
       ],
       createdAt: now
+    },
+    {
+      _id: 'trip_004',
+      ownerId: 'u_near_001',
+      ownerName: '晴川',
+      title: '富阳到杭州轻野返程',
+      teamName: '轻野露营队',
+      from: '富阳服务区',
+      to: '杭州奥体中心',
+      departAt: dateAfter(1, '15:00'),
+      seatTotal: 4,
+      seatJoined: 1,
+      priceShare: 35,
+      status: 'open',
+      matchRate: 21,
+      days: 1,
+      stage: 'forming',
+      depth: '中度',
+      plans: ['拼桌', '露营'],
+      equipment: ['应急电源'],
+      dailyKm: 90,
+      waypoints: [],
+      remainingKm: 42,
+      privacy: 'public',
+      discoverable: true,
+      note: '与千岛湖方向相反，下午返回杭州。',
+      route: [
+        { latitude: 30.1, longitude: 119.9 },
+        { latitude: 30.35, longitude: 120.3 }
+      ],
+      teammates: [
+        { userId: 'u_near_001', nickname: '晴川', latitude: 30.29, longitude: 120.2 }
+      ],
+      createdAt: now
     }
   ],
   trip_members: [
@@ -248,7 +306,8 @@ const seed = {
     { _id: 'tm_002', tripId: 'trip_001', userId: 'u_guest_001', nickname: '小北', role: 'passenger', joinedAt: now },
     { _id: 'tm_003', tripId: 'trip_002', userId: 'u_owner_002', nickname: '南风', role: 'owner', joinedAt: now },
     { _id: 'tm_004', tripId: 'trip_001', userId: 'u_mock_001', nickname: '林小路', role: 'passenger', joinedAt: now },
-    { _id: 'tm_005', tripId: 'trip_003', userId: 'u_mock_001', nickname: '林小路', role: 'owner', joinedAt: now }
+    { _id: 'tm_005', tripId: 'trip_003', userId: 'u_mock_001', nickname: '林小路', role: 'owner', joinedAt: now },
+    { _id: 'tm_006', tripId: 'trip_004', userId: 'u_near_001', nickname: '晴川', role: 'owner', joinedAt: now }
   ],
   trip_requests: [
     { _id: 'request_001', tripId: 'trip_003', userId: 'u_guest_001', nickname: '小北', vehicleModel: '大众 ID.4', message: '我从杭州东出发，可以提前到集合点，也会带应急电源。', status: 'pending', createdAt: dateAfter(-1, '10:18') }
@@ -264,15 +323,17 @@ const seed = {
     { _id: 'conv_poi_001', type: 'poi', title: '千岛湖服务区补给 · 6人在聊', lastMessage: '咖啡双人券还有名额', time: '09:36', meta: '活跃话题', unread: 1, targetId: 'poi_001' },
     { _id: 'conv_private_001', type: 'private', title: '南风 · ★4.9', lastMessage: '苏州线可以带宠物吗？', time: '10:20', meta: '已互关', relation: 'mutual', unread: 1, targetId: 'u_owner_002' },
     { _id: 'conv_private_002', type: 'private', title: '小北 · 1条可回', lastMessage: '我走慢道，你们到哪了？', time: '10:32', meta: '同队成员', relation: 'teammate', unread: 0, targetId: 'u_guest_001' },
+    { _id: 'conv_private_solo', type: 'private', title: '山野独行 · ★4.9', lastMessage: '我在你东侧三公里，也准备去千岛湖。', time: '10:36', meta: '可回复 1 条', relation: 'incoming', unread: 1, targetId: 'u_solo_001' },
     { _id: 'conv_poi_old', type: 'poi', title: '二郎山隧道施工', lastMessage: '已归档 · 最后消息 3天前', time: '3天前', meta: '历史话题', archived: true, unread: 0, targetId: 'poi_003' }
   ],
   notifications: [
+    { _id: 'notice_safety', type: 'emergency', title: '前方安全提醒', content: '前方道路施工并线，请车队减速保持车距。', priority: 'high', read: false, data: { tripId: 'trip_001' }, createdAt: '2026-07-01 10:38' },
     { _id: 'notice_001', type: 'trip', title: '车队状态更新', content: '千岛湖周末小队已进入行进状态', priority: 'normal', read: false, data: { tripId: 'trip_001' }, createdAt: '2026-07-01 09:25' }
   ],
   poi_chats: [
-    { _id: 'poi_001', name: '千岛湖服务区补给讨论', location: '杭千高速服务区', online: 6, status: 'active', lastMessage: '咖啡双人券还有名额', createdAt: now },
-    { _id: 'poi_002', name: '苏州平江路停车位', location: '苏州平江路', online: 3, status: 'quiet', lastMessage: '东侧停车场还有空位', followed: false, createdAt: now },
-    { _id: 'poi_003', name: '二郎山隧道施工', location: 'G318 二郎山段', online: 0, status: 'archived', lastMessage: '施工已结束，道路恢复通行', followed: true, createdAt: '2026-06-28 10:00' }
+    { _id: 'poi_001', name: '千岛湖服务区补给讨论', location: '杭千高速服务区', latitude: 30.18, longitude: 119.93, online: 6, status: 'active', lastMessage: '咖啡双人券还有名额', createdAt: now },
+    { _id: 'poi_002', name: '富阳服务区充电排队', location: '富阳服务区', latitude: 30.23, longitude: 120.02, online: 3, status: 'quiet', lastMessage: '东区还有两个快充空位', followed: false, createdAt: now },
+    { _id: 'poi_003', name: '二郎山隧道施工', location: 'G318 二郎山段', latitude: 29.91, longitude: 119.48, online: 0, status: 'archived', lastMessage: '施工已结束，道路恢复通行', followed: true, createdAt: '2026-06-28 10:00' }
   ],
   poi_messages: [
     { _id: 'poim_001', poiChatId: 'poi_001', userId: 'u_owner_001', nickname: '阿成车主', content: '服务区北区停车位充足，咖啡店不用排队。', createdAt: '2026-07-01 09:30' },
@@ -282,12 +343,14 @@ const seed = {
   private_messages: [
     { _id: 'pm_000', fromUserId: 'u_mock_001', toUserId: 'u_owner_002', nickname: '林小路', content: '你好，我在看你发布的苏州路线。', createdAt: '2026-07-01 10:18' },
     { _id: 'pm_001', fromUserId: 'u_owner_002', toUserId: 'u_mock_001', nickname: '南风', content: '苏州线可以带宠物，车上有宠物垫。', createdAt: '2026-07-01 10:20' },
-    { _id: 'pm_002', fromUserId: 'u_guest_001', toUserId: 'u_mock_001', nickname: '小北', content: '我走慢道，你们到哪了？', createdAt: '2026-07-01 10:32' }
+    { _id: 'pm_002', fromUserId: 'u_guest_001', toUserId: 'u_mock_001', nickname: '小北', content: '我走慢道，你们到哪了？', createdAt: '2026-07-01 10:32' },
+    { _id: 'pm_solo', fromUserId: 'u_solo_001', toUserId: 'u_mock_001', nickname: '山野独行', content: '我在你东侧三公里，也准备去千岛湖。', createdAt: '2026-07-01 10:36' }
   ],
   follows: [
     { _id: 'follow_001', followerId: 'u_mock_001', targetType: 'user', targetId: 'u_owner_002', createdAt: now },
     { _id: 'follow_002', followerId: 'u_owner_002', targetType: 'user', targetId: 'u_mock_001', createdAt: now },
-    { _id: 'follow_003', followerId: 'u_mock_001', targetType: 'team', targetId: 'trip_001', createdAt: now }
+    { _id: 'follow_003', followerId: 'u_mock_001', targetType: 'team', targetId: 'trip_001', createdAt: now },
+    { _id: 'follow_solo', followerId: 'u_solo_001', targetType: 'user', targetId: 'u_mock_001', createdAt: now }
   ],
   blocked_users: [],
   groupbuys: [
@@ -380,10 +443,10 @@ const seed = {
     { _id: 'layer_001', type: 'poi', icon: 'gas', title: '中石化富阳站', subtitle: '沿途服务', desc: '前方 12km · 95#有货 · 评分 4.6', address: '富阳服务区东区', phone: '0571-96000', distanceKm: 12, latitude: 30.23, longitude: 120.02 },
     { _id: 'layer_002', type: 'safe', icon: 'hospital', title: '千岛湖镇人民医院', subtitle: '安全 POI', desc: '急诊 24 小时 · 距离 2.4km', address: '淳安县环湖北路1869号', phone: '120', distanceKm: 2.4, latitude: 29.62, longitude: 119.05 },
     { _id: 'layer_003', type: 'traffic', icon: 'warning', title: '杭千高速 K122 施工', subtitle: '道路事件', desc: '拥堵 2.1km · 预计通行 18 分钟', distanceKm: 32, latitude: 30.01, longitude: 119.65 },
-    { _id: 'layer_004', type: 'team', icon: 'car', title: '318经典车队', subtitle: '同向车队 · 5人', desc: '队长阿杰 · 前方 8km · 成都到拉萨', targetId: 'trip_001', leaderId: 'u_owner_001', distanceKm: 8, latitude: 30.31, longitude: 120.18 },
+    { _id: 'layer_004', type: 'team', icon: 'car', title: '轻野露营队', subtitle: '逆向车队 · 1人', desc: '队长晴川 · 前方 6km · 富阳到杭州', targetId: 'trip_004', leaderId: 'u_near_001', distanceKm: 6, direction: 'opposite', latitude: 30.29, longitude: 120.2 },
     { _id: 'layer_driver', type: 'driver', icon: 'car', title: '山野独行', subtitle: '个人自驾者 · Lv.2', desc: '距你 3.2km · 正在附近自驾', userId: 'u_solo_001', distanceKm: 3.2, latitude: 30.29, longitude: 120.17 },
     { _id: 'layer_005', type: 'poi', icon: 'food', title: '湖畔家常菜', subtitle: '沿途餐厅', desc: '评分 4.7 · 可停 12 辆车 · 距离 6.3km', address: '淳安县千岛湖大道88号', phone: '0571-64881234', distanceKm: 6.3, latitude: 29.76, longitude: 119.22 },
-    { _id: 'layer_006', type: 'team', icon: 'car', title: '轻野露营队', subtitle: '逆向车队 · 3人', desc: '队长晴川 · 后方 14km · 千岛湖到杭州', leaderId: 'u_guest_001', distanceKm: 14, direction: 'opposite', latitude: 29.91, longitude: 119.48 }
+    { _id: 'layer_006', type: 'team', icon: 'car', title: '苏州咖啡线', subtitle: '同向车队 · 1人', desc: '队长南风 · 后方 14km · 上海到苏州', targetId: 'trip_002', leaderId: 'u_owner_002', distanceKm: 14, direction: 'same', latitude: 29.91, longitude: 119.48 }
   ]
 };
 

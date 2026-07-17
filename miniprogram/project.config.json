@@ -16,7 +16,7 @@
   },
   "compileType": "miniprogram",
   "libVersion": "2.32.3",
-  "appid": "touristappid",
+  "appid": "wx8a43108da1896fa1",
   "projectname": "tongdao-v2",
   "cloudfunctionRoot": "../cloudfunctions/",
   "condition": {},

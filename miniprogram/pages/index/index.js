@@ -12,13 +12,18 @@ const defaultLayers = {
 };
 
 const markerIcons = {
-  teammate: '/images/markers/default.png',
+  teammate: '/images/markers/teammate.png',
   groupbuy: '/images/markers/groupbuy.png',
   poi: '/images/markers/gas.png',
+  gas: '/images/markers/gas.png',
+  food: '/images/markers/food.png',
+  hotel: '/images/markers/hotel.png',
   safe: '/images/markers/safety.png',
   traffic: '/images/markers/safety.png',
   team: '/images/markers/car.png',
-  driver: '/images/markers/default.png',
+  oppositeTeam: '/images/markers/car_gray.png',
+  driver: '/images/markers/driver.png',
+  destination: '/images/markers/destination.png',
   poiChat: '/images/markers/poi_chat.png'
 };
 
@@ -40,11 +45,22 @@ Page({
     longitude: 120.1551,
     sharingLocation: true,
     stats: { unreadCount: 0 },
-    weather: { altitude: 0, text: '--', temperature: '--' },
+    weather: { altitude: 0, text: '--', temperature: '--', icon: '☀' },
     energyReminder: null,
     apiMode: api.isRemote() ? 'remote' : 'offline',
     sosHolding: false,
     sosProgress: 0
+  },
+
+  onLoad() {
+    this.shownHighPriorityIds = new Set();
+    this.highPriorityModalOpen = false;
+    this.unsubscribeRealtime = api.subscribeRealtime(event => {
+      const notification = event && event.data || {};
+      if (!event || event.event !== 'notification') return;
+      this.showHighPriorityNotification(notification);
+      this.load();
+    });
   },
 
   onReady() {
@@ -58,6 +74,12 @@ Page({
 
   onHide() {
     if (this.data.sosHolding) this.cancelSosHold();
+    this.stopLocationTracking();
+  },
+
+  onUnload() {
+    this.stopLocationTracking();
+    if (this.unsubscribeRealtime) this.unsubscribeRealtime();
   },
 
   load() {
@@ -70,6 +92,7 @@ Page({
         currentTrip.remainingDays = Math.max(0, Number(currentTrip.days || 1) - currentTrip.currentDay + 1);
       }
       const route = currentTrip && currentTrip.route || [];
+      const location = res.data.location || {};
       this.setData({
         user: res.data.user,
         trips: res.data.trips || [],
@@ -78,13 +101,41 @@ Page({
         mapLayers: res.data.mapLayers || [],
         poiChats: res.data.poiChats || [],
         stats: res.data.stats || {},
-        weather: res.data.weather || this.data.weather,
+        weather: { ...(res.data.weather || this.data.weather), icon: weatherIcon(res.data.weather && res.data.weather.text) },
         energyReminder: res.data.energyReminder || null,
         sharingLocation: res.data.settings.shareLocation !== false,
-        latitude: route[0] ? route[0].latitude : this.data.latitude,
-        longitude: route[0] ? route[0].longitude : this.data.longitude,
+        latitude: Number.isFinite(Number(location.latitude)) ? Number(location.latitude) : route[0] ? route[0].latitude : this.data.latitude,
+        longitude: Number.isFinite(Number(location.longitude)) ? Number(location.longitude) : route[0] ? route[0].longitude : this.data.longitude,
         polyline: route.length ? [{ points: route, color: '#1F6FEB', width: 7, arrowLine: true }] : []
-      }, this.buildMarkers);
+      }, () => {
+        this.buildMarkers();
+        this.syncUnreadBadge(Number(this.data.stats.unreadCount || 0));
+        if (this.data.sharingLocation) this.startLocationTracking();
+        this.showHighPriorityNotification(res.data.highPriorityNotification);
+      });
+    });
+  },
+
+  showHighPriorityNotification(notification) {
+    if (!notification || !['high', 'urgent'].includes(notification.priority)) return;
+    const notificationId = notification.id || notification._id;
+    if (this.highPriorityModalOpen || notificationId && this.shownHighPriorityIds.has(notificationId)) return;
+    if (notificationId) this.shownHighPriorityIds.add(notificationId);
+    this.highPriorityModalOpen = true;
+    wx.showModal({
+      title: notification.title || '安全提醒',
+      content: notification.content || '收到一条高优先级安全通知，请立即确认。',
+      showCancel: false,
+      confirmText: '我知道了',
+      success: result => {
+        this.highPriorityModalOpen = false;
+        if (!result.confirm || !notificationId) return;
+        api.markConversationRead(notificationId, 'system').then(() => this.load());
+      },
+      fail: () => {
+        this.highPriorityModalOpen = false;
+        if (notificationId) this.shownHighPriorityIds.delete(notificationId);
+      }
     });
   },
 
@@ -101,14 +152,14 @@ Page({
           id,
           latitude: item.latitude,
           longitude: item.longitude,
-          iconPath: markerIcons.teammate,
+          iconPath: item.isLeader ? markerIcons.team : (item.avatar || markerIcons.teammate),
           width: 34,
           height: 34,
-          callout: { content: item.latestMessage ? `${item.nickname} · 💬` : item.nickname, display: 'ALWAYS', padding: 5, borderRadius: 5, bgColor: '#FFFFFF', color: '#17202A', fontSize: 11 }
+          callout: { content: `${item.offline ? '离线 · ' : ''}${item.isLeader ? '队长 · ' : ''}${item.nickname}${item.latestMessage ? ' · 💬' : ''}`, display: 'ALWAYS', padding: 5, borderRadius: 5, bgColor: item.offline ? '#EDF1F4' : '#FFFFFF', color: item.offline ? '#71808F' : '#17202A', fontSize: 11 }
         });
         const distance = item.distanceMeters == null ? '--' : `${(Number(item.distanceMeters) / 1000).toFixed(1)}km`;
         const speed = item.speed == null ? '--' : `${Math.round(Number(item.speed))}km/h`;
-        markerTargets.push({ id, type: 'teammate', title: item.nickname, userId: item.userId, subtitle: `本队队友 · Lv.${item.level || 1}`, desc: `距你 ${distance} · 车速 ${speed} · ${item.reportedAt || '等待位置更新'}`, preview: item.latestMessage || '', latitude: item.latitude, longitude: item.longitude });
+        markerTargets.push({ id, type: 'teammate', title: item.nickname, userId: item.userId, subtitle: `${item.isLeader ? '队长 · 动态集合基准' : '本队队友'} · Lv.${item.level || 1}${item.ownerCertStatus === 'approved' ? ' · 车主已认证' : ''}${item.offline ? ' · 离线' : ''}`, desc: `距你 ${distance} · 车速 ${speed} · ${item.reportedAt || '等待位置更新'}`, preview: item.latestMessage || '', latitude: item.latitude, longitude: item.longitude });
       });
     }
 
@@ -117,7 +168,7 @@ Page({
         id: 90,
         latitude: route[route.length - 1].latitude,
         longitude: route[route.length - 1].longitude,
-        iconPath: '/images/markers/default.png',
+        iconPath: markerIcons.destination,
         width: 32,
         height: 32,
         callout: { content: `终点 · ${trip.to}`, display: 'ALWAYS', padding: 5, borderRadius: 5, bgColor: '#E4F6EF', color: '#087F5B', fontSize: 11 }
@@ -132,7 +183,7 @@ Page({
         id,
         latitude: item.latitude,
         longitude: item.longitude,
-        iconPath: markerIcons[item.type] || markerIcons.poi,
+        iconPath: item.subtype === 'rescue' ? markerIcons.safe : item.type === 'driver' && item.avatar ? item.avatar : markerIcons[item.markerKind] || markerIcons[item.type] || markerIcons.poi,
         width: 32,
         height: 32,
         joinCluster: true,
@@ -142,10 +193,11 @@ Page({
     });
 
     if (this.data.activeLayers.groupbuy) {
-      (this.data.groupbuys || []).slice(0, 2).forEach((item, index) => {
+      (this.data.groupbuys || []).slice(0, 50).forEach((item, index) => {
         const id = index + 300;
-        const latitude = Number(item.latitude || 29.63 + index * .14);
-        const longitude = Number(item.longitude || 119.06 + index * .2);
+        const latitude = Number(item.latitude);
+        const longitude = Number(item.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
         markers.push({ id, latitude, longitude, iconPath: markerIcons.groupbuy, width: 34, height: 34, joinCluster: true, callout: { content: `拼团 ¥${item.price}`, display: 'ALWAYS', padding: 5, borderRadius: 5, bgColor: '#FFEBE9', color: '#C83C32', fontSize: 11 } });
         markerTargets.push({ id, type: 'groupbuy', targetId: item._id, title: item.merchantName, subtitle: item.title, desc: `${item.joined}人已拼 · 距离 ${item.distanceKm}km`, price: item.price, latitude, longitude });
       });
@@ -154,8 +206,9 @@ Page({
     if (this.data.activeLayers.poiChat) {
       const groupedTopics = new Map();
       (this.data.poiChats || []).filter(item => item.status !== 'archived').forEach(item => {
-        const latitude = Number(item.latitude || 29.61);
-        const longitude = Number(item.longitude || 119.04);
+        const latitude = Number(item.latitude);
+        const longitude = Number(item.longitude);
+        if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
         const key = `${latitude.toFixed(3)}:${longitude.toFixed(3)}:${item.locationName || ''}`;
         if (!groupedTopics.has(key)) groupedTopics.set(key, { latitude, longitude, topics: [] });
         groupedTopics.get(key).topics.push(item);
@@ -165,7 +218,7 @@ Page({
         const online = group.topics.reduce((sum, item) => sum + Number(item.online || 0), 0);
         const first = group.topics[0];
         markers.push({ id, latitude: group.latitude, longitude: group.longitude, iconPath: markerIcons.poiChat, width: 34, height: 34, joinCluster: true, callout: { content: `${group.topics.length}个话题 · ${online}人在聊`, display: 'ALWAYS', padding: 5, borderRadius: 5, bgColor: '#EAF2FF', color: '#1558B0', fontSize: 11 } });
-        markerTargets.push({ id, type: 'poiChatGroup', targetId: first._id, title: first.locationName || first.name, subtitle: `${group.topics.length}个话题 · ${online}人参与`, desc: first.lastMessage, topics: group.topics, latitude: group.latitude, longitude: group.longitude });
+        markerTargets.push({ id, type: 'poiChatGroup', targetId: first._id, title: first.locationName || first.name, subtitle: `${group.topics.length}个话题 · ${online}人在线`, desc: first.lastMessage, topics: group.topics, latitude: group.latitude, longitude: group.longitude });
       });
     }
     this.setData({ markers, markerTargets });
@@ -214,6 +267,11 @@ Page({
     wx.switchTab({ url: '/pages/trips/trips' });
   },
 
+  goTeamChat() {
+    if (!this.data.currentTrip) return;
+    wx.navigateTo({ url: `/pages/chatGroup/chatGroup?id=${this.data.currentTrip._id}` });
+  },
+
   goGroupbuys() {
     wx.navigateTo({ url: '/pages/groupbuyList/groupbuyList' });
   },
@@ -234,6 +292,7 @@ Page({
     if (item.type === 'groupbuy') wx.navigateTo({ url: `/pages/groupbuyDetail/groupbuyDetail?id=${item.targetId}` });
     else if (item.type === 'poiChat' || (item.type === 'poiChatGroup' && item.topics.length === 1)) wx.navigateTo({ url: `/pages/poiChat/poiChat?id=${item.targetId}` });
     else if (item.type === 'team') wx.navigateTo({ url: `/pages/tripDetail/tripDetail?id=${item.targetId}` });
+    else if (item.type === 'poi' && item.targetId) wx.navigateTo({ url: `/pages/merchantDetail/merchantDetail?id=${item.targetId}` });
     else if (item.type === 'teammate' || item.type === 'driver' || item.leaderId) wx.navigateTo({ url: `/pages/userProfile/userProfile?id=${item.userId || item.leaderId}` });
     else this.navigateSelected();
   },
@@ -262,8 +321,15 @@ Page({
 
   navigateSelected() {
     const item = this.data.selected;
-    if (!item || !item.latitude) return;
-    wx.openLocation({ latitude: item.latitude, longitude: item.longitude, name: item.title, address: item.address || item.desc || '' });
+    const latitude = Number(item && item.latitude);
+    const longitude = Number(item && item.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return wx.showToast({ title: '该位置暂不可导航', icon: 'none' });
+    wx.openLocation({ latitude, longitude, name: item.title, address: item.address || item.desc || '' });
+  },
+
+  syncUnreadBadge(count) {
+    if (count > 0) wx.setTabBarBadge({ index: 1, text: `${Math.min(99, count)}` });
+    else wx.removeTabBarBadge({ index: 1 });
   },
 
   avoidSelected() {
@@ -275,14 +341,20 @@ Page({
 
   callSelected() {
     const phone = this.data.selected && this.data.selected.phone;
-    if (phone) wx.makePhoneCall({ phoneNumber: phone });
+    const phoneNumber = String(phone || '').split(/[;,|]/).map(value => value.trim()).find(Boolean);
+    if (phoneNumber) wx.makePhoneCall({ phoneNumber });
   },
 
   shareSelected() {
     const item = this.data.selected;
     const trip = this.data.currentTrip;
     if (!item || !trip) return;
-    api.sendMessage(trip._id, `分享：${item.title} · ${item.desc || item.subtitle}`, item.type === 'traffic' ? 'traffic' : 'share').then(res => {
+    const type = item.type === 'traffic' ? 'traffic' : item.type === 'groupbuy' ? 'groupbuy' : 'text';
+    api.sendMessage(trip._id, `分享：${item.title} · ${item.desc || item.subtitle}`, type, {
+      eventId: item.type === 'traffic' ? item.targetId : undefined,
+      sessionId: item.type === 'groupbuy' ? item.targetId : undefined,
+      latitude: item.latitude, longitude: item.longitude
+    }).then(res => {
       if (res.ok) wx.showToast({ title: '已发到车队群' });
     });
   },
@@ -324,7 +396,39 @@ Page({
 
   toggleSharing() {
     const sharingLocation = !this.data.sharingLocation;
-    api.updateSettings({ shareLocation: sharingLocation }).then(() => this.setData({ sharingLocation }));
+    api.updateSettings({ shareLocation: sharingLocation }).then(response => {
+      if (!response.ok) return wx.showToast({ title: response.message, icon: 'none' });
+      this.setData({ sharingLocation });
+      if (sharingLocation) this.startLocationTracking();
+      else this.stopLocationTracking();
+    });
+  },
+
+  startLocationTracking() {
+    if (this.locationTracking || !wx.startLocationUpdate || !wx.onLocationChange) return;
+    this.locationHandler = location => {
+      this.setData({
+        latitude: Number(location.latitude), longitude: Number(location.longitude),
+        'weather.altitude': Math.round(Number(location.altitude || this.data.weather.altitude || 0))
+      });
+      if (Date.now() - Number(this.lastLocationReportAt || 0) < 15000) return;
+      this.lastLocationReportAt = Date.now();
+      api.reportLiveLocation(this.data.currentTrip && this.data.currentTrip._id, location).then(() => {});
+    };
+    wx.startLocationUpdate({
+      success: () => {
+        this.locationTracking = true;
+        wx.onLocationChange(this.locationHandler);
+      },
+      fail: () => { this.locationHandler = null; }
+    });
+  },
+
+  stopLocationTracking() {
+    if (this.locationHandler && wx.offLocationChange) wx.offLocationChange(this.locationHandler);
+    if (this.locationTracking && wx.stopLocationUpdate) wx.stopLocationUpdate();
+    this.locationHandler = null;
+    this.locationTracking = false;
   },
 
   startSosHold() {
@@ -370,3 +474,13 @@ Page({
     });
   }
 });
+
+function weatherIcon(text) {
+  const value = String(text || '');
+  if (/雷|暴雨/.test(value)) return '⚡';
+  if (/雨/.test(value)) return '☂';
+  if (/雪/.test(value)) return '❄';
+  if (/雾|霾/.test(value)) return '≋';
+  if (/阴|云/.test(value)) return '☁';
+  return '☀';
+}

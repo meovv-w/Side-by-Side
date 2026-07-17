@@ -33,11 +33,20 @@ function createCommonService({ repository, hub, clock = () => Date.now() }) {
       const existing = await repository.findOne('growth_logs', { user_id: userId, rule_key: ruleKey, ref_type: refType, ref_id: refId });
       if (existing) return existing;
     }
+    let delta = Number(rule.points);
+    if (rule.daily_limit != null) {
+      const today = now().slice(0, 10);
+      const awardedToday = (await repository.find('growth_logs', { user_id: userId, rule_key: ruleKey }))
+        .filter(item => String(item.created_at || '').slice(0, 10) === today)
+        .reduce((sum, item) => sum + Number(item.delta || 0), 0);
+      delta = Math.min(delta, Math.max(0, Number(rule.daily_limit) - awardedToday));
+      if (delta <= 0) return null;
+    }
     const log = await repository.insert('growth_logs', {
-      id: id('growth'), user_id: userId, rule_key: ruleKey, delta: Number(rule.points),
+      id: id('growth'), user_id: userId, rule_key: ruleKey, delta,
       reason, ref_type: refType || null, ref_id: refId || null, created_at: now()
     });
-    const user = await repository.increment('users', userId, { growth: Number(rule.points) });
+    const user = await repository.increment('users', userId, { growth: delta });
     const level = Math.max(1, Math.min(10, Math.floor(Number(user.growth) / 1500) + 1));
     if (level !== Number(user.level)) await repository.update('users', userId, { level, updated_at: now() });
     await evaluateBadges(userId);

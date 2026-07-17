@@ -1,3 +1,5 @@
+const runtimeConfig = require('./config');
+
 App({
   globalData: {
     envId: '',
@@ -6,9 +8,11 @@ App({
   },
 
   onLaunch() {
-    const configuredApi = wx.getStorageSync('tongdao_api_base_url');
+    let extConfig = {};
+    try { extConfig = wx.getExtConfigSync ? wx.getExtConfigSync() || {} : {}; } catch (_) {}
+    const configuredApi = wx.getStorageSync('tongdao_api_base_url') || extConfig.apiBaseUrl || runtimeConfig.apiBaseUrl;
     const system = wx.getSystemInfoSync();
-    this.globalData.apiBaseUrl = configuredApi || (system.platform === 'devtools' ? 'http://127.0.0.1:8790' : '');
+    this.globalData.apiBaseUrl = String(configuredApi || (system.platform === 'devtools' ? 'http://127.0.0.1:8790' : '')).trim().replace(/\/$/, '');
     if (wx.cloud) {
       wx.cloud.init({
         env: this.globalData.envId || undefined,

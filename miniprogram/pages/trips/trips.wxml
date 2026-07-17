@@ -23,7 +23,7 @@
       <view class="leader-avatar">{{item.avatarText}}</view>
       <view class="trip-head-main">
         <view class="trip-name">{{item.teamName || item.title}}</view>
-        <view class="muted">队长 {{item.ownerName}} · 信用 4.9</view>
+        <view class="muted">队长 {{item.ownerName}} · 信用 {{item.ownerCreditScore}}</view>
       </view>
       <view wx:if="{{sortMode === 'match'}}" class="match-rate">顺路率 <text>{{item.matchRate == null ? '--' : item.matchRate + '%'}}</text></view>
       <view wx:elif="{{sortMode === 'distance'}}" class="match-rate">距起点 <text>{{item.distanceKm == null ? '--' : item.distanceKm + 'km'}}</text></view>

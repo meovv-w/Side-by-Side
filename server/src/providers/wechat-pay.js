@@ -68,6 +68,14 @@ class WechatPayProvider {
     });
   }
 
+  async queryProfitShare({ transactionId, outOrderNo }) {
+    assert(transactionId && outOrderNo, 400, 'PROFIT_SHARE_REFERENCE_REQUIRED', '分账查询缺少支付单号或分账单号');
+    return this.#call(
+      'GET',
+      `/v3/profitsharing/orders/${encodeURIComponent(outOrderNo)}?transaction_id=${encodeURIComponent(transactionId)}`
+    );
+  }
+
   verifyCallback(rawBody, headers) {
     this.#assertConfigured(true);
     const timestamp = headers['wechatpay-timestamp'];

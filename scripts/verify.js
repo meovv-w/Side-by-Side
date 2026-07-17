@@ -65,6 +65,9 @@ function checkStructure() {
     assert(tab.iconPath && tab.selectedIconPath, `tab icons missing: ${page}`);
     assert(exists(`miniprogram/${tab.iconPath}`) && exists(`miniprogram/${tab.selectedIconPath}`), `tab icon file missing: ${page}`);
   }
+  for (const privateApi of ['getLocation', 'chooseLocation', 'startLocationUpdate', 'onLocationChange']) {
+    assert((app.requiredPrivateInfos || []).includes(privateApi), `requiredPrivateInfos missing: ${privateApi}`);
+  }
 
   for (const name of ['login', 'trip', 'groupbuy', 'order', 'chat']) {
     assert(exists(`cloudfunctions/${name}/index.js`), `missing cloudfunctions/${name}/index.js`);
@@ -72,9 +75,16 @@ function checkStructure() {
     assert(pkg.dependencies && pkg.dependencies['wx-server-sdk'], `missing wx-server-sdk in ${name}`);
   }
 
-  for (const asset of ['miniprogram/images/products/coffee.jpg', 'miniprogram/images/products/snack.jpg']) {
+  for (const asset of [
+    'miniprogram/images/products/coffee.jpg', 'miniprogram/images/products/snack.jpg',
+    'miniprogram/images/markers/car.png', 'miniprogram/images/markers/car_gray.png',
+    'miniprogram/images/markers/destination.png', 'miniprogram/images/markers/teammate.png', 'miniprogram/images/markers/driver.png',
+    'miniprogram/images/invite-demo.png'
+  ]) {
     assert(exists(asset), `product asset missing: ${asset}`);
   }
+  assert(exists('miniprogram/config.js'), 'production API runtime configuration is missing');
+  assert(readJson('miniprogram/project.config.json').appid !== 'touristappid', 'WeChat project still uses touristappid');
 
   const mock = readJson('scripts/mock-data.json');
   for (const name of ['users', 'trips', 'trip_members', 'messages', 'groupbuys', 'orders', 'vehicle_certs', 'invites', 'coupons', 'growth_logs']) {
@@ -84,11 +94,17 @@ function checkStructure() {
   for (const [adminFile, apiFile] of [['admin-merchant/index.html', 'admin-merchant/api-mode.js'], ['admin-ops/index.html', 'admin-ops/api-mode.js']]) {
     const html = read(adminFile);
     const apiSource = read(apiFile);
+    const combined = `${html}\n${apiSource}`;
     assert(html.includes('api-mode.js'), `${adminFile} must load its real API adapter`);
     assert(html.includes('<form') && html.includes('<table'), `${adminFile} must contain operational forms and tables`);
     assert(apiSource.includes('fetch(`${API_BASE}${path}`'), `${apiFile} must call the shared API`);
     assert(apiSource.includes('查看详情') || apiFile.includes('ops'), `${apiFile} must expose record details`);
-    assert(!/Mock-only|alert\(['"]Mock/.test(`${html}\n${apiSource}`), `${adminFile} still contains mock-only actions`);
+    assert(!/Mock-only|alert\(['"]Mock/.test(combined), `${adminFile} still contains mock-only actions`);
+    for (const match of html.matchAll(/on(?:click|change|input)="([A-Za-z_$][\w$]*)\s*\(/g)) {
+      const name = match[1];
+      if (name === 'if') continue;
+      assert(new RegExp(`(?:function\\s+${name}\\s*\\(|(?:window\\.)?${name}\\s*=)`).test(combined), `${adminFile} inline action is not implemented: ${name}`);
+    }
   }
 
 
@@ -98,22 +114,53 @@ function checkStructure() {
     'server/src/routes/maps.js', 'server/src/routes/commerce.js', 'server/src/routes/users.js',
     'server/src/routes/merchant.js', 'server/src/routes/ops.js',
     'server/migrations/001_initial.sql', 'server/migrations/002_trip_draft_note.sql',
-    'server/migrations/003_safety_report_review.sql', 'server/migrations/004_rescue_services.sql'
+    'server/migrations/003_safety_report_review.sql', 'server/migrations/004_rescue_services.sql',
+    'server/migrations/005_support_targets.sql', 'server/migrations/006_merchant_invite_source.sql',
+    'server/migrations/007_traffic_provider_dedupe.sql', 'server/migrations/008_poi_topic_presence.sql'
   ];
   for (const filename of backendFiles) assert(exists(filename), `backend file missing: ${filename}`);
   const routes = backendFiles.filter(filename => filename.includes('/routes/')).map(read).join('\n');
+  const serviceSources = fs.readdirSync(path.join(root, 'server/src/services')).filter(name => name.endsWith('.js')).map(name => read(`server/src/services/${name}`)).join('\n');
   for (const endpoint of ['/api/trips', '/api/conversations', '/api/map/context', '/api/orders', '/api/coupons/me', '/api/merchant', '/api/ops']) {
     assert(routes.includes(endpoint), `server route family missing: ${endpoint}`);
   }
+  assert(routes.includes('/api/certifications/liveness/callback'), 'liveness callback route is missing');
   assert(read('admin-merchant/api-mode.js').includes('/api/merchant/verify/coupon'), 'merchant coupon verification UI is missing');
+  assert(read('admin-merchant/api-mode.js').includes('BarcodeDetector'), 'merchant QR scanner is missing');
+  assert(read('admin-merchant/api-mode.js').includes('/api/map/geocode'), 'merchant onboarding must resolve a real map location');
   assert(read('admin-ops/api-mode.js').includes('/api/ops/coupon-redemptions'), 'ops coupon settlement UI is missing');
+  const mapService = read('server/src/services/maps.js');
+  for (const poiType of ['010100', '011100', '030000', '050000', '060200', '080504', '090100', '100000', '110209', '150900', '180300', '200300', '130501']) {
+    assert(mapService.includes(poiType), `required AMap POI type missing: ${poiType}`);
+  }
+  assert(read('server/src/providers/amap.js').includes('trafficIncidents'), 'AMap traffic incident adapter is missing');
+  assert(read('miniprogram/utils/remoteApi.js').includes('adaptAvailableProduct'), 'products without active groups must remain available to start a groupbuy');
+  assert(read('miniprogram/utils/remoteApi.js').includes('touchPoiPresence'), 'POI online presence adapter is missing');
+  for (const name of ['AMAP_TRAFFIC_CLIENT_KEY', 'AMAP_TRAFFIC_SIGNER_URL', 'AMAP_TRAFFIC_SIGNER_TOKEN']) {
+    assert(read('server/.env.example').includes(name), `traffic incident configuration missing: ${name}`);
+  }
+  assert(read('server/.env.example').includes('/api/payments/wechat/notify'), 'WeChat payment callback example does not match the server route');
+  assert(read('miniprogram/utils/remoteApi.js').includes('toServerDate(payload.departAt)'), 'trip departure time is not converted to server UTC');
+  assert(read('miniprogram/pages/index/index.wxml').includes('{{weather.icon}}'), 'map status bar weather icon is missing');
+  assert(!serviceSources.includes('Math.random('), 'production services must use cryptographic identifiers and verification codes');
 
   checkBindingsAndNavigation(app);
   checkTrackedFiles();
+  checkRemoteTimeConversion();
 
   const visibleSources = requiredPages.flatMap(page => ['wxml', 'js'].map(ext => read(`miniprogram/${page}.${ext}`))).join('\n');
   assert(!/Mock 登录|模拟支付|MVP 使用模拟/.test(visibleSources), 'user-facing mock labels remain');
   assert(!/start="2026-/.test(visibleSources), 'hardcoded minimum date remains in a date picker');
+}
+
+function checkRemoteTimeConversion() {
+  const remoteApi = require(path.join(root, 'miniprogram/utils/remoteApi'));
+  const localInput = '2026-07-18 08:30:00';
+  const expectedServer = new Date(2026, 6, 18, 8, 30, 0).toISOString().slice(0, 23).replace('T', ' ');
+  const serverValue = remoteApi.toServerDate(localInput);
+  assert(serverValue === expectedServer, `local departure time conversion failed: ${serverValue}`);
+  assert(remoteApi.normalizeDate(serverValue) === localInput, 'server UTC to local display round-trip failed');
+  assert(remoteApi.serverTimestamp(serverValue) === new Date(2026, 6, 18, 8, 30, 0).getTime(), 'server timestamp parsing failed');
 }
 
 function checkBindingsAndNavigation(app) {
@@ -199,8 +246,9 @@ async function checkProductFlow() {
 
   const topic = await api.createPoiChat({ name: '自动验收地点话题', location: '杭州测试服务区' });
   assert(topic.ok && topic.data.followed, 'location topic create failed');
-  const poiMessage = await api.sendPoiMessage(topic.data._id, '地点消息自动验收');
-  assert(poiMessage.ok, 'location topic message failed');
+  const presence = await api.touchPoiPresence(topic.data._id);
+  const poiMessage = await api.sendPoiMessage(topic.data._id, '地点消息自动验收', 'text', { replyTo: { messageId: 'seed', nickname: '系统', content: '话题已创建' } });
+  assert(presence.ok && poiMessage.ok && poiMessage.data.metadata.replyTo.messageId === 'seed', 'location topic presence/reply flow failed');
 
   const groups = await api.listGroupbuys();
   assert(groups.ok && groups.data.length >= 2 && groups.data[0].currentPrice, 'tier price calculation missing');

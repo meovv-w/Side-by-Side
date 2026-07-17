@@ -1,16 +1,25 @@
 const { assert } = require('../lib/errors');
 const { id } = require('../lib/ids');
-const { distanceMeters, routeMatchRate, distanceFromRoute } = require('../lib/geo');
+const { distanceMeters, routeMatchRate, distanceFromRoute, validCoordinate } = require('../lib/geo');
 const { addTime, timestamp } = require('../lib/time');
 const { publicUser } = require('./users');
 const { publicMerchant } = require('./merchant');
 
 function createTripService({ repository, providers, common, clock = () => Date.now() }) {
   async function list(userId, query = {}) {
-    const userMemberships = await repository.find('trip_members', { user_id: userId, status: ['active', 'leave_pending'] });
-    const memberIds = new Set(userMemberships.map(item => item.trip_id));
-    let trips = await repository.find('trips', { status: query.status || ['recruiting', 'full', 'started'] });
-    trips = trips.filter(trip => (trip.privacy === 'public' && trip.discoverable !== false) || trip.owner_id === userId || memberIds.has(trip.id));
+    const allMemberships = await repository.find('trip_members', { user_id: userId });
+    const userMemberships = allMemberships.filter(item => ['active', 'leave_pending'].includes(item.status));
+    const memberIds = new Set(allMemberships.map(item => item.trip_id));
+    const activeMemberIds = new Set(userMemberships.map(item => item.trip_id));
+    let trips = query.status
+      ? await repository.find('trips', { status: query.status })
+      : await repository.find('trips');
+    const publicStatuses = new Set(['recruiting', 'full', 'started']);
+    trips = trips.filter(trip =>
+      publicStatuses.has(trip.status) && trip.privacy === 'public' && trip.discoverable !== false
+      || trip.owner_id === userId
+      || memberIds.has(trip.id)
+    );
     let candidate = query.startLng != null ? {
       start: { lng: Number(query.startLng), lat: Number(query.startLat) },
       end: { lng: Number(query.endLng), lat: Number(query.endLat) },
@@ -28,7 +37,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
       const application = await repository.findOne('trip_applications', { trip_id: trip.id, user_id: userId });
       const distance = query.lng != null ? distanceMeters({ lng: query.lng, lat: query.lat }, { lng: trip.start_lng, lat: trip.start_lat }) : null;
       items.push({
-        ...trip, owner: publicUser(owner, false), joined: memberIds.has(trip.id),
+        ...trip, owner: publicUser(owner, false), joined: activeMemberIds.has(trip.id), participated: memberIds.has(trip.id), owned: trip.owner_id === userId,
         applicationStatus: application ? application.status : 'none',
         matchRate: candidate ? routeMatchRate(candidate, tripPoints(trip)) : null,
         distanceMeters: Number.isFinite(distance) ? Math.round(distance) : null
@@ -49,10 +58,12 @@ function createTripService({ repository, providers, common, clock = () => Date.n
 
   async function detail(userId, tripId) {
     const trip = await getTrip(tripId);
+    const owner = await common.getUser(trip.owner_id);
     const memberships = await repository.find('trip_members', { trip_id: tripId });
     const active = memberships.filter(item => ['active', 'leave_pending'].includes(item.status));
     const member = active.find(item => item.user_id === userId);
-    assert(trip.privacy === 'public' || trip.owner_id === userId || member, 403, 'PRIVATE_TRIP', '该行程为私密行程');
+    const historicalMember = memberships.find(item => item.user_id === userId);
+    assert(trip.privacy === 'public' || trip.owner_id === userId || historicalMember, 403, 'PRIVATE_TRIP', '该行程为私密行程');
     const members = [];
     for (const membership of active) members.push({ ...membership, user: publicUser(await common.getUser(membership.user_id), membership.user_id === userId) });
     const applicationRows = trip.owner_id === userId
@@ -74,7 +85,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
       const location = await latestLocation(membership.user_id, tripId);
       const teammate = await common.getUser(membership.user_id);
       teammates.push({
-        user_id: membership.user_id, nickname: teammate.nickname,
+        user_id: membership.user_id, nickname: teammate.nickname, role: membership.role,
         latitude: location ? Number(location.lat) : Number(trip.start_lat),
         longitude: location ? Number(location.lng) : Number(trip.start_lng),
         speed: location ? Number(location.speed) : 0, reported_at: location ? location.reported_at : null
@@ -82,7 +93,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
     }
     const ownApplication = await repository.findOne('trip_applications', { trip_id: tripId, user_id: userId });
     return {
-      trip: { ...trip, teammates }, members, applications, leaveRequests,
+      trip: { ...trip, owner: publicUser(owner, false), teammates }, members, applications, leaveRequests,
       joined: Boolean(member), owned: trip.owner_id === userId, requestStatus: ownApplication ? ownApplication.status : 'none'
     };
   }
@@ -131,6 +142,50 @@ function createTripService({ repository, providers, common, clock = () => Date.n
       note: payload.note
     };
     const changes = Object.fromEntries(Object.entries(allowed).filter(([, value]) => value !== undefined));
+    if (changes.title !== undefined) {
+      changes.title = String(changes.title).trim().slice(0, 200);
+      assert(changes.title, 400, 'TRIP_TITLE_REQUIRED', '请填写行程标题');
+    }
+    if (changes.team_name !== undefined) {
+      changes.team_name = String(changes.team_name).trim().slice(0, 120);
+      assert(changes.team_name, 400, 'TEAM_NAME_REQUIRED', '请填写车队名称');
+    }
+    if (changes.depart_at !== undefined) assert(timestamp(changes.depart_at) > clock(), 400, 'DEPARTURE_TIME_INVALID', '出发时间必须晚于当前时间');
+    if (changes.days !== undefined) {
+      changes.days = Number(changes.days);
+      assert(Number.isInteger(changes.days) && changes.days >= 1 && changes.days <= 365, 400, 'TRIP_DAYS_INVALID', '预计天数必须为1至365天');
+    }
+    if (changes.daily_km !== undefined) {
+      changes.daily_km = Number(changes.daily_km);
+      assert(Number.isFinite(changes.daily_km) && changes.daily_km > 0 && changes.daily_km <= 2000, 400, 'DAILY_KM_INVALID', '每日里程必须大于0且不超过2000公里');
+    }
+    if (changes.price_share !== undefined) {
+      changes.price_share = Number(changes.price_share);
+      assert(Number.isFinite(changes.price_share) && changes.price_share >= 0, 400, 'PRICE_SHARE_INVALID', '人均预算不能小于0');
+    }
+    if (changes.depth !== undefined) assert(['light', 'medium', 'deep'].includes(changes.depth), 400, 'TRIP_DEPTH_INVALID', '同路深度不正确');
+    if (changes.privacy !== undefined) assert(['public', 'private'].includes(changes.privacy), 400, 'TRIP_PRIVACY_INVALID', '行程隐私设置不正确');
+    if (changes.plans !== undefined) assert(Array.isArray(changes.plans), 400, 'TRIP_PLANS_INVALID', '沿途计划格式不正确');
+    if (changes.equipment !== undefined) assert(Array.isArray(changes.equipment), 400, 'TRIP_EQUIPMENT_INVALID', '随车装备格式不正确');
+    const routeFields = ['startName', 'startLng', 'startLat', 'endName', 'endLng', 'endLat', 'route', 'waypoints'];
+    if (routeFields.some(key => payload[key] !== undefined)) {
+      const routePayload = {
+        startName: payload.startName === undefined ? trip.start_name : payload.startName,
+        startLng: payload.startLng === undefined ? trip.start_lng : payload.startLng,
+        startLat: payload.startLat === undefined ? trip.start_lat : payload.startLat,
+        endName: payload.endName === undefined ? trip.end_name : payload.endName,
+        endLng: payload.endLng === undefined ? trip.end_lng : payload.endLng,
+        endLat: payload.endLat === undefined ? trip.end_lat : payload.endLat,
+        waypoints: payload.waypoints === undefined ? trip.waypoints || [] : payload.waypoints
+      };
+      validateRoutePoints(routePayload);
+      Object.assign(changes, {
+        start_name: String(routePayload.startName).trim(), start_lng: Number(routePayload.startLng), start_lat: Number(routePayload.startLat),
+        end_name: String(routePayload.endName).trim(), end_lng: Number(routePayload.endLng), end_lat: Number(routePayload.endLat),
+        waypoints: routePayload.waypoints,
+        route: validRoute(payload.route) ? payload.route : await fetchRoute(routePayload)
+      });
+    }
     if (changes.max_cars !== undefined) {
       changes.max_cars = Number(changes.max_cars);
       assert(changes.max_cars >= trip.current_cars && changes.max_cars <= 20, 400, 'MAX_CARS_INVALID', '同行车数必须在当前人数至20辆之间');
@@ -248,6 +303,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
     const member = await activeMember(trip.id, userId);
     const settings = await repository.findOne('user_settings', { user_id: userId });
     assert(!settings || settings.share_location, 403, 'LOCATION_SHARING_DISABLED', '你已关闭位置共享');
+    assert(validCoordinate(payload), 400, 'LOCATION_REQUIRED', '位置坐标不能为空或超出有效范围');
     const now = common.now();
     const location = await repository.insert('locations', {
       id: id('location'), user_id: userId, trip_id: trip.id, lng: Number(payload.lng), lat: Number(payload.lat),
@@ -274,7 +330,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
     const user = await common.getUser(userId);
     const settings = await repository.findOne('user_settings', { user_id: userId });
     assert(user.discoverable && (!settings || settings.share_location), 403, 'PRESENCE_SHARING_DISABLED', '请先开启附近发现和位置共享');
-    assert(Number.isFinite(Number(payload.lng)) && Number.isFinite(Number(payload.lat)), 400, 'LOCATION_REQUIRED', '位置坐标不能为空');
+    assert(validCoordinate(payload), 400, 'LOCATION_REQUIRED', '位置坐标不能为空或超出有效范围');
     return repository.insert('locations', {
       id: id('location'), user_id: userId, trip_id: null, lng: Number(payload.lng), lat: Number(payload.lat),
       speed: Number(payload.speed || 0), altitude: Number(payload.altitude || 0), accuracy: Number(payload.accuracy || 0),
@@ -297,7 +353,12 @@ function createTripService({ repository, providers, common, clock = () => Date.n
       for (const item of members) {
         const location = await latestLocation(item.user_id, trip.id);
         if (!location) continue;
-        teammates.push({ ...location, member: item, user: publicUser(await common.getUser(item.user_id), item.user_id === userId), distanceMeters: Math.round(distanceMeters(center, location)) });
+        teammates.push({
+          ...location, member: item, isLeader: item.role === 'owner',
+          user: publicUser(await common.getUser(item.user_id), item.user_id === userId),
+          distanceMeters: Math.round(distanceMeters(center, location)),
+          offline: timestamp(location.reported_at) < clock() - 5 * 60000
+        });
       }
     }
     const otherTeams = [];
@@ -305,13 +366,14 @@ function createTripService({ repository, providers, common, clock = () => Date.n
     for (const trip of trips) {
       if (ownTripIds.has(trip.id)) continue;
       const owner = await common.getUser(trip.owner_id);
-      if (!owner.discoverable) continue;
+      if (!owner.discoverable || await blockedEitherWay(userId, owner.id)) continue;
       const location = await latestLocation(trip.owner_id, trip.id);
       if (!location) continue;
       const distance = distanceMeters(center, location);
       if (distance <= radius) {
         const privatePreview = await unreadPrivatePreview(userId, owner.id);
-        otherTeams.push({ trip, leader: publicUser(owner, false), location, distanceMeters: Math.round(distance), direction: routeDirection(ownTrips[0], trip), ...privatePreview });
+        const relation = routeRelation(ownTrips[0], trip, center, location);
+        otherTeams.push({ trip, leader: publicUser(owner, false), location, distanceMeters: Math.round(distance), ...relation, ...privatePreview });
       }
     }
     const soloDrivers = [];
@@ -324,7 +386,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
       if (driverId === userId || activeDriverIds.has(driverId) || timestamp(location.expires_at) <= clock()) continue;
       const driver = await common.getUser(driverId);
       const settings = await repository.findOne('user_settings', { user_id: driverId });
-      if (!driver.discoverable || (settings && !settings.share_location)) continue;
+      if (!driver.discoverable || (settings && !settings.share_location) || await blockedEitherWay(userId, driverId)) continue;
       const distance = distanceMeters(center, location);
       if (distance > radius) continue;
       soloDrivers.push({ user: publicUser(driver, false), location, distanceMeters: Math.round(distance), ...(await unreadPrivatePreview(userId, driverId)) });
@@ -342,7 +404,13 @@ function createTripService({ repository, providers, common, clock = () => Date.n
     const trafficEvents = (await repository.find('traffic_events', { status: 'active' })).filter(event =>
       (!event.ends_at || timestamp(event.ends_at) > clock()) && distanceMeters(center, event) <= radius
     );
-    const unread = (await repository.find('conversation_members', { user_id: userId, left_at: null })).reduce((sum, item) => sum + Number(item.unread_count || 0), 0);
+    const memberships = await repository.find('conversation_members', { user_id: userId, left_at: null });
+    const teamUnread = memberships
+      .filter(item => item.conversation_type === 'team')
+      .reduce((sum, item) => sum + Number(item.unread_count || 0), 0);
+    const visiblePrivateUnread = [...otherTeams, ...soloDrivers]
+      .reduce((sum, item) => sum + Number(item.unreadPrivateCount || 0), 0);
+    const unread = teamUnread + visiblePrivateUnread;
     return { ownTrips, teammates, otherTeams, soloDrivers, merchants, topics, trafficEvents, unreadCount: unread, isTripOwner: ownMemberships.some(item => item.role === 'owner') };
   }
 
@@ -353,6 +421,7 @@ function createTripService({ repository, providers, common, clock = () => Date.n
   async function createDraft(userId, payload) {
     await common.assertCertified(userId);
     validateRoutePoints(payload);
+    assert(payload.departAt && timestamp(payload.departAt) > clock(), 400, 'DEPARTURE_TIME_INVALID', '出发时间必须晚于当前时间');
     const route = payload.route || await fetchRoute(payload);
     return repository.insert('trip_drafts', {
       id: id('trip_draft'), user_id: userId, start_name: payload.startName, start_lng: Number(payload.startLng), start_lat: Number(payload.startLat),
@@ -448,6 +517,11 @@ function createTripService({ repository, providers, common, clock = () => Date.n
   }
 
   async function unreadPrivatePreview(userId, targetUserId) {
+    const [following, followedBack] = await Promise.all([
+      repository.findOne('follows', { follower_id: userId, target_type: 'user', target_id: targetUserId }),
+      repository.findOne('follows', { follower_id: targetUserId, target_type: 'user', target_id: userId })
+    ]);
+    if (following && followedBack) return { unreadPrivateCount: 0, latestPrivateMessage: null };
     const conversationId = common.privateConversationId(userId, targetUserId);
     const membership = await repository.findOne('conversation_members', {
       conversation_type: 'private', conversation_id: conversationId, user_id: userId, left_at: null
@@ -457,6 +531,14 @@ function createTripService({ repository, providers, common, clock = () => Date.n
       unreadPrivateCount: Number(membership.unread_count),
       latestPrivateMessage: await repository.findOne('messages', { conversation_type: 'private', conversation_id: conversationId, deleted_at: null }, { orderBy: ['created_at', 'desc'] })
     };
+  }
+
+  async function blockedEitherWay(firstUserId, secondUserId) {
+    const [outbound, inbound] = await Promise.all([
+      repository.findOne('blocks', { user_id: firstUserId, target_user_id: secondUserId }),
+      repository.findOne('blocks', { user_id: secondUserId, target_user_id: firstUserId })
+    ]);
+    return Boolean(outbound || inbound);
   }
 
   async function activeMerchantSessions(merchantId) {
@@ -491,12 +573,22 @@ function createTripService({ repository, providers, common, clock = () => Date.n
     validateRoutePoints(payload);
     assert(payload.departAt && timestamp(payload.departAt) > clock(), 400, 'DEPARTURE_TIME_INVALID', '出发时间必须晚于当前时间');
     assert(Number(payload.maxCars || 4) >= 1 && Number(payload.maxCars || 4) <= 20, 400, 'MAX_CARS_INVALID', '同行车数必须为1至20辆');
-    assert(Number(payload.days || 1) >= 1, 400, 'TRIP_DAYS_INVALID', '预计天数必须大于0');
+    assert(Number.isInteger(Number(payload.days || 1)) && Number(payload.days || 1) >= 1 && Number(payload.days || 1) <= 365, 400, 'TRIP_DAYS_INVALID', '预计天数必须为1至365天');
+    assert(Number(payload.dailyKm || 200) > 0 && Number(payload.dailyKm || 200) <= 2000, 400, 'DAILY_KM_INVALID', '每日里程必须大于0且不超过2000公里');
+    assert(Number(payload.priceShare || 0) >= 0, 400, 'PRICE_SHARE_INVALID', '人均预算不能小于0');
+    assert(['light', 'medium', 'deep'].includes(payload.depth || 'medium'), 400, 'TRIP_DEPTH_INVALID', '同路深度不正确');
+    assert(['public', 'private'].includes(payload.privacy || 'public'), 400, 'TRIP_PRIVACY_INVALID', '行程隐私设置不正确');
+    assert(Array.isArray(payload.waypoints || []) && (payload.waypoints || []).length <= 5, 400, 'TRIP_WAYPOINTS_INVALID', '途经点最多5个');
+    if (payload.route) assert(validRoute(payload.route), 400, 'TRIP_ROUTE_INVALID', '路线坐标格式不正确');
   }
 
   function validateRoutePoints(payload) {
-    for (const key of ['startLng', 'startLat', 'endLng', 'endLat']) assert(Number.isFinite(Number(payload[key])), 400, 'TRIP_COORDINATES_REQUIRED', '起点和终点坐标不能为空');
+    assert(validCoordinate({ lng: payload.startLng, lat: payload.startLat }) && validCoordinate({ lng: payload.endLng, lat: payload.endLat }), 400, 'TRIP_COORDINATES_REQUIRED', '起点和终点坐标不能为空或超出有效范围');
     assert(payload.startName && payload.endName, 400, 'TRIP_POINTS_REQUIRED', '起点和终点不能为空');
+  }
+
+  function validRoute(route) {
+    return Array.isArray(route) && route.length >= 2 && route.every(validCoordinate);
   }
 
   return {
@@ -514,11 +606,17 @@ function tripPoints(trip) {
   };
 }
 
-function routeDirection(first, second) {
-  if (!first) return 'unknown';
+function routeRelation(first, second, center, location) {
+  if (!first) return { direction: 'unknown', relativePosition: 'nearby' };
   const firstVector = { x: Number(first.end_lng) - Number(first.start_lng), y: Number(first.end_lat) - Number(first.start_lat) };
   const secondVector = { x: Number(second.end_lng) - Number(second.start_lng), y: Number(second.end_lat) - Number(second.start_lat) };
-  return firstVector.x * secondVector.x + firstVector.y * secondVector.y >= 0 ? 'same' : 'opposite';
+  const direction = firstVector.x * secondVector.x + firstVector.y * secondVector.y >= 0 ? 'same' : 'opposite';
+  if (direction === 'opposite') return { direction, relativePosition: 'opposite' };
+  const offset = { x: Number(location.lng) - Number(center.lng), y: Number(location.lat) - Number(center.lat) };
+  return {
+    direction,
+    relativePosition: firstVector.x * offset.x + firstVector.y * offset.y >= 0 ? 'ahead' : 'behind'
+  };
 }
 
 function amapPolyline(result) {

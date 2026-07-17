@@ -10,15 +10,17 @@
     <view class="card progress-card">
       <view class="row"><view class="card-title">已拼 {{item.joined}} 人</view><view class="price-text">还差 {{item.remain}} 人到目标</view></view>
       <view class="progress"><view class="progress-inner" style="width: {{item.progress}}%"></view></view>
-      <view class="avatars"><view wx:for="{{item.participantAvatars}}" wx:key="name" class="avatar small">{{item.text}}</view><view class="avatar small more">+{{item.remain}}</view></view>
+      <view class="avatars"><view wx:for="{{item.participantAvatars}}" wx:key="name" class="avatar small"><image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill"></image><text wx:else>{{item.text}}</text></view><view class="avatar small more">+{{item.remain}}</view></view>
     </view>
 
     <view class="card"><view class="section-title">人越多，价格越低</view><view wx:for="{{item.tiers}}" wx:key="people" class="tier {{item.reached ? 'reached' : ''}}"><view><text class="tier-people">{{item.people}}人</text><text wx:if="{{item.reached}}" class="tag success">已解锁</text></view><view><text class="tier-price">¥{{item.price}}</text><text class="tier-save">省 {{item.save}} 元</text></view></view></view>
     <view class="card"><view class="section-title">使用说明</view><view class="description">{{item.description}}</view><view class="rule"><text>1</text><view>支付成功后生成 6 位核销码</view></view><view class="rule"><text>2</text><view>到店向商家出示核销码</view></view><view class="rule"><text>3</text><view>核销前可在订单页申请退款</view></view></view>
   </view>
 
-  <view class="group-tools"><button class="secondary-btn" bindtap="shareTeam">发到车队群</button><button class="secondary-btn" open-type="share">分享微信好友</button><button class="secondary-btn" bindtap="startGroupbuy">新开一团</button></view>
-  <view class="footer-actions deal-footer"><button class="primary-btn buy-button" bindtap="openCheckout">立即参团 · ¥{{item.currentPrice}}</button></view>
+  <view class="group-tools"><button class="secondary-btn" bindtap="shareTeam">车队群</button><button class="secondary-btn" open-type="share">微信好友</button><button class="secondary-btn" bindtap="shareTimeline">朋友圈</button><button class="secondary-btn" bindtap="startGroupbuy">新开一团</button></view>
+  <view class="footer-actions deal-footer"><button class="primary-btn buy-button" disabled="{{item.status!=='forming'}}" bindtap="openCheckout">{{item.status==='forming'?'立即参团 · ¥'+item.currentPrice:(item.status==='success'?'拼团已成功':'拼团已结束')}}</button></view>
+
+  <view wx:if="{{cutAnimation}}" class="cut-success"><view class="cut-card"><view class="cut-label">{{cutDelta>0?'又砍一刀！':'参团成功'}}</view><view class="cut-price">{{cutDelta>0?'再降 ¥'+cutDelta:'离下一档更近'}}</view><view class="cut-total">当前已省 ¥{{cutSavings}}</view><view class="cut-line"></view></view></view>
 
   <view wx:if="{{checkoutOpen}}" class="mask" bindtap="closeCheckout"></view>
   <view wx:if="{{checkoutOpen}}" class="checkout-sheet">
@@ -26,8 +28,8 @@
     <view class="checkout-product"><view><view class="card-title">{{item.title}}</view><view class="muted">{{item.merchantName}}</view></view><view class="price-text">¥{{item.currentPrice}}</view></view>
     <view class="section-header"><view class="section-title">优惠券</view><view class="muted">{{item.coupons.length}} 张可用</view></view>
     <view class="coupon-choice {{selectedCouponId === '' ? 'selected' : ''}}" data-id="" bindtap="selectCoupon"><text>不使用优惠券</text><text>{{selectedCouponId === '' ? '✓' : ''}}</text></view>
-    <view wx:for="{{item.coupons}}" wx:key="_id" class="coupon-choice {{selectedCouponId === item._id ? 'selected' : ''}}" data-id="{{item._id}}" bindtap="selectCoupon"><view><view>{{item.title}}</view><view class="caption">满{{item.threshold}}减{{item.amount}}</view></view><view class="coupon-amount">-¥{{item.amount}} {{selectedCouponId === item._id ? '✓' : ''}}</view></view>
-    <view class="pay-summary"><view><text>商品金额</text><text>¥{{item.currentPrice}}</text></view><view><text>优惠</text><text>-¥{{selectedCoupon ? selectedCoupon.amount : 0}}</text></view><view class="pay-total"><text>实付</text><text>¥{{payable}}</text></view></view>
+    <view wx:for="{{item.coupons}}" wx:key="_id" class="coupon-choice {{selectedCouponId === item._id ? 'selected' : ''}}" data-id="{{item._id}}" bindtap="selectCoupon"><view><view>{{item.title}}</view><view class="caption">满{{item.threshold}}可用 · {{item.discountText}}</view></view><view class="coupon-amount">{{item.discountText}} {{selectedCouponId === item._id ? '✓' : ''}}</view></view>
+    <view class="pay-summary"><view><text>商品金额</text><text>¥{{item.currentPrice}}</text></view><view><text>优惠</text><text>{{selectedCoupon ? selectedCoupon.discountText : '未使用'}}</text></view><view class="pay-total"><text>实付</text><text>¥{{payable}}</text></view></view>
     <button class="checkout-support" bindtap="support">支付遇到问题？联系客服</button>
     <button class="primary-btn pay-button" bindtap="pay">确认支付 ¥{{payable}}</button>
   </view>

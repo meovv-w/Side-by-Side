@@ -20,8 +20,10 @@ class DemoMap {
   async around() { return { status: '1', pois: [] }; }
   async weather() { return { status: '1', lives: [{ weather: '晴', temperature: '22', winddirection: '东', windpower: '2' }] }; }
   async trafficAround() { return { status: '1', trafficinfo: { description: '演示路况畅通', roads: [] } }; }
+  async trafficIncidents() { return { code: 1, data: [] }; }
   async inputTips(keywords) { return { status: '1', tips: [{ id: 'demo-tip', name: keywords, district: '演示区域', location: '120.1551,30.2741' }] }; }
   async geocode(address) { return { status: '1', geocodes: [{ formatted_address: address, location: '120.1551,30.2741' }] }; }
+  async reverseGeocode() { return { status: '1', regeocode: { addressComponent: { city: '杭州市', adcode: '330100' } } }; }
 }
 
 class DemoIm {
@@ -41,6 +43,7 @@ class DemoPay {
   }
   async refund({ outRefundNo }) { return { refund_id: `demo_${outRefundNo}`, out_refund_no: outRefundNo, status: 'SUCCESS' }; }
   async profitShare({ outOrderNo }) { return { out_order_no: outOrderNo, state: 'FINISHED' }; }
+  async queryProfitShare({ outOrderNo }) { return { out_order_no: outOrderNo, state: 'FINISHED' }; }
   verifyCallback(rawBody) { return JSON.parse(rawBody); }
 }
 

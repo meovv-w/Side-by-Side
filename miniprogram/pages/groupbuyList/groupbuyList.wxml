@@ -1,13 +1,15 @@
 <view class="page groupbuy-page">
   <view class="list-heading"><view><view class="title">沿途拼团</view><view class="muted">当前路线附近可核销优惠</view></view><view class="route-pill">{{routeLabel}}</view></view>
   <view class="filter-bar"><view wx:for="{{filters}}" wx:key="key" class="filter {{current === item.key ? 'active' : ''}}" data-key="{{item.key}}" bindtap="change">{{item.label}}</view></view>
+  <view wx:if="{{loading}}" class="empty">正在加载沿途优惠</view>
+  <view wx:elif="{{items.length===0}}" class="empty">当前筛选下暂无可参团优惠</view>
   <view wx:for="{{items}}" wx:key="_id" class="deal-card" bindtap="open" data-id="{{item._id}}">
-    <view class="deal-image"><image src="{{item.coverPhoto}}" mode="aspectFill"></image><view class="category">{{item.category}}</view><view class="distance">{{item.distanceKm}}km</view></view>
+    <view class="deal-image"><image src="{{item.coverPhoto}}" mode="aspectFill"></image><view class="category">{{item.category}}</view><view class="distance">{{item.displayDistance}}</view></view>
     <view class="deal-body">
       <view class="deal-title">{{item.title}}</view><view class="merchant">{{item.merchantName}} · 评分 {{item.rating}}</view>
       <view class="price-row"><text class="price">¥{{item.currentPrice}}</text><text class="origin">¥{{item.originPrice}}</text><text class="save">省{{item.save}}元</text></view>
       <view class="progress"><view class="progress-inner" style="width: {{item.progress}}%"></view></view>
-      <view class="deal-meta"><text>已拼 {{item.joined}} 人</text><text>已售 {{item.sold}} 份</text><text>剩 {{item.stock}} 份</text></view>
+      <view class="deal-meta"><text>{{item.availableToStart ? '点击发起新拼团' : '已拼 ' + item.joined + ' 人'}}</text><text>已售 {{item.sold}} 份</text><text>剩 {{item.stock}} 份</text></view>
     </view>
   </view>
 </view>

@@ -6,8 +6,8 @@
     </view>
     <view class="status-center">{{currentTrip ? '剩余' + currentTrip.remainingDays + '天 · ' + (currentTrip.remainingKm || '--') + 'km' : '未设置行程'}}</view>
     <view class="status-right">
-      <view class="status-icon" bindtap="goMessages">消息 <text wx:if="{{stats.unreadCount}}" class="badge">{{stats.unreadCount}}</text></view>
-      <view class="weather">{{weather.altitude}}m · {{weather.text}} {{weather.temperature}}°</view>
+      <view class="status-icon" bindtap="goMessages">消息 <text wx:if="{{stats.mapUnreadCount}}" class="badge">{{stats.mapUnreadCount}}</text></view>
+      <view class="weather">{{weather.altitude}}m · {{weather.icon}} {{weather.temperature}}°</view>
     </view>
   </view>
 
@@ -56,7 +56,7 @@
     <view class="object-desc">{{selected.desc}}</view>
     <view wx:if="{{selected.preview}}" class="message-preview">最新消息：{{selected.preview}}</view>
     <view wx:if="{{selected.price}}" class="object-price">车队价 ¥{{selected.price}}</view>
-    <view wx:if="{{selected.type === 'poiChatGroup' && selected.topics.length > 1}}" class="topic-choices"><view wx:for="{{selected.topics}}" wx:key="_id" data-id="{{item._id}}" bindtap="openTopic"><view><view class="card-title">{{item.name}}</view><view class="muted">{{item.online}}人参与 · {{item.lastMessage}}</view></view><text>›</text></view></view>
+    <view wx:if="{{selected.type === 'poiChatGroup' && selected.topics.length > 1}}" class="topic-choices"><view wx:for="{{selected.topics}}" wx:key="_id" data-id="{{item._id}}" bindtap="openTopic"><view><view class="card-title">{{item.name}}</view><view class="muted">{{item.online}}人在线 · {{item.lastMessage}}</view></view><text>›</text></view></view>
     <view class="object-actions">
       <button wx:if="{{selected.type !== 'poiChatGroup' || selected.topics.length === 1}}" class="secondary-btn small-btn" bindtap="openSelected">查看</button>
       <button wx:if="{{selected.userId || selected.leaderId}}" class="secondary-btn small-btn" bindtap="messageSelected">消息</button>
@@ -76,6 +76,7 @@
     </view>
     <view class="trip-side">
       <view class="sharing {{sharingLocation ? 'on' : ''}}" catchtap="toggleSharing">位置 {{sharingLocation ? 'ON' : 'OFF'}}</view>
+      <view class="talk" catchtap="goTeamChat">对讲</view>
       <text>›</text>
     </view>
   </view>

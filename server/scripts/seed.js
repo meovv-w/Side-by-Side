@@ -5,7 +5,7 @@ const { createDemoSeed } = require('../src/db/demo-seed');
 const ORDER = [
   'users', 'user_settings', 'vehicle_certifications', 'trip_drafts', 'badges', 'user_badges',
   'merchants', 'merchant_change_requests', 'admins', 'trips', 'trip_applications', 'trip_members',
-  'locations', 'messages', 'conversation_members', 'follows', 'blocks', 'poi_topics', 'poi_topic_members',
+  'locations', 'messages', 'conversation_members', 'follows', 'blocks', 'poi_topics', 'poi_topic_members', 'poi_topic_presence',
   'products', 'groupbuy_sessions', 'coupons', 'orders', 'groupbuy_members', 'payment_events', 'refunds',
   'verification_records', 'settlements', 'user_coupons', 'coupon_redemptions', 'invites', 'invite_links', 'growth_rules',
   'growth_logs', 'support_tickets', 'support_messages', 'notifications', 'emergency_events',

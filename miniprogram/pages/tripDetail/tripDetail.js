@@ -29,17 +29,23 @@ Page({
       if (!res.ok) return wx.showToast({ title: res.message || '行程不存在', icon: 'none' });
       const trip = res.data.trip;
       const route = trip.route || [];
-      const statusMap = { open: '招募中', full: '已满员', done: '已结束' };
+      const statusMap = { open: '招募中', full: '已满员', started: '行进中', done: '已结束' };
       this.setData({
         trip: { ...trip, statusText: statusMap[trip.status] || trip.status, plansText: (trip.plans || []).join(' · '), equipmentText: (trip.equipment || []).join(' · ') },
-        members: res.data.members.map(member => ({ ...member, avatarText: (member.nickname || '同').slice(0, 1), level: member.user.level || 1, creditScore: member.user.creditScore || '-' })),
+        members: res.data.members.map(member => ({
+          ...member,
+          avatarText: (member.nickname || '同').slice(0, 1),
+          level: member.user.level || 1,
+          creditScore: member.user.creditScore || '-',
+          certified: member.user.ownerCertStatus === 'approved'
+        })),
         requests: res.data.requests || [],
         leaveRequests: res.data.leaveRequests || [],
         joined: res.data.joined,
         owned: res.data.owned,
         requestStatus: res.data.requestStatus,
         center: route[0] || this.data.center,
-        markers: (trip.teammates || []).map((item, index) => ({ id: index + 1, latitude: item.latitude, longitude: item.longitude, iconPath: '/images/markers/default.png', width: 32, height: 32, callout: { content: item.nickname, display: 'ALWAYS', padding: 5, borderRadius: 4 } })),
+        markers: (trip.teammates || []).map((item, index) => ({ id: index + 1, latitude: item.latitude, longitude: item.longitude, iconPath: item.role === 'owner' ? '/images/markers/car.png' : '/images/markers/teammate.png', width: 32, height: 32, callout: { content: item.nickname, display: 'ALWAYS', padding: 5, borderRadius: 4 } })),
         polyline: route.length ? [{ points: route, color: '#1F6FEB', width: 7, arrowLine: true }] : []
       });
     });

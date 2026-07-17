@@ -1,10 +1,11 @@
 const api = require('../../utils/api');
 
 function decorate(item) {
-  const statusMap = { open: '招募中', full: '已满员', done: '已结束' };
+  const statusMap = { open: '招募中', full: '已满员', started: '行进中', done: '已结束' };
   return {
     ...item,
-    avatarText: (item.ownerName || '同').slice(0, 1),
+    avatarText: (item.owner && item.owner.nickname || item.ownerName || '同').slice(0, 1),
+    ownerCreditScore: item.owner && (item.owner.creditScore || item.owner.credit_score) || '-',
     statusText: statusMap[item.status] || item.status,
     plansText: (item.plans || []).join(' · '),
     equipmentText: (item.equipment || []).join(' · ')
@@ -50,7 +51,7 @@ Page({
   applyFilter() {
     const current = this.data.currentFilter;
     const trips = this.data.allTrips.filter(item => {
-      if (current === 'joined') return item.joined || item.owned;
+      if (current === 'joined') return item.participated || item.joined || item.owned;
       if (current === 'pending') return item.requestStatus === 'pending';
       return !item.joined && !item.owned && item.status === 'open';
     });

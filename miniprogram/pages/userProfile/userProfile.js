@@ -10,12 +10,22 @@ Page({
   load() {
     api.getUserProfile(this.data.id).then(res => {
       if (!res.ok) return wx.showToast({ title: res.message, icon: 'none' });
-      const routes = (res.data.trips || []).map(item => item.route || []).filter(route => route.length > 1);
+      const actualTracks = new Map();
+      for (const point of res.data.trajectory || []) {
+        if (!actualTracks.has(point.tripId)) actualTracks.set(point.tripId, []);
+        actualTracks.get(point.tripId).push(point);
+      }
+      const actualRoutes = [...actualTracks.values()].filter(route => route.length > 1);
+      const routes = actualRoutes.length
+        ? actualRoutes
+        : (res.data.trips || []).map(item => item.route || []).filter(route => route.length > 1);
       const colors = ['#1F6FEB', '#087F5B', '#C66A10', '#C83C32'];
       const trajectoryPoints = routes.reduce((points, route) => points.concat(route), []);
       this.setData({
         ...res.data, avatarText: (res.data.user.nickname || '同').slice(0, 1), trajectoryPoints,
+        certStatusText: ({ approved: '车主已认证', pending: '认证审核中', rejected: '认证未通过', none: '尚未认证' })[res.data.user.ownerCertStatus] || '尚未认证',
         trajectoryPolylines: routes.map((points, index) => ({ points, color: colors[index % colors.length], width: 6, arrowLine: true })),
+        trajectorySource: actualRoutes.length ? '实际行驶轨迹' : '公开行程路线',
         trajectoryLatitude: trajectoryPoints[0] ? trajectoryPoints[0].latitude : this.data.trajectoryLatitude,
         trajectoryLongitude: trajectoryPoints[0] ? trajectoryPoints[0].longitude : this.data.trajectoryLongitude
       });

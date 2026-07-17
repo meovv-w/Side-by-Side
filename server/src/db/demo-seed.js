@@ -15,9 +15,10 @@ function createDemoSeed(clock = () => Date.now()) {
       { id: 'u_guest', openid: 'demo-openid-guest', phone: '13800000003', nickname: '小北', avatar: '', role: 'user', owner_cert_status: 'pending', vehicle_model: '大众 ID.4', vehicle_no: '浙B2K991', bio: '第一次长途自驾。', growth: 1680, level: 2, credit_score: 4.7, discoverable: true, invite_code: 'TD991AAA', invited_by: null, created_at: ago(20, 'days'), updated_at: now, last_login_at: ago(2, 'hours') },
       { id: 'u_other', openid: 'demo-openid-other', phone: '13800000004', nickname: '南风', avatar: '', role: 'user', owner_cert_status: 'approved', vehicle_model: '坦克 300', vehicle_no: '沪B7F620', bio: '喜欢慢节奏和城市周边路线。', growth: 4260, level: 3, credit_score: 4.9, discoverable: true, invite_code: 'TD620AAA', invited_by: null, created_at: ago(60, 'days'), updated_at: now, last_login_at: ago(3, 'hours') },
       { id: 'u_solo', openid: 'demo-openid-solo', phone: '13800000006', nickname: '山野独行', avatar: '', role: 'user', owner_cert_status: 'approved', vehicle_model: '斯巴鲁森林人', vehicle_no: '浙D6S318', bio: '独自旅行，也愿意认识附近同路人。', growth: 2200, level: 2, credit_score: 4.9, discoverable: true, invite_code: 'TDSOLO01', invited_by: null, created_at: ago(80, 'days'), updated_at: now, last_login_at: ago(20, 'minutes') },
+      { id: 'u_near_team', openid: 'demo-openid-near-team', phone: '13800000007', nickname: '晴川', avatar: '', role: 'user', owner_cert_status: 'approved', vehicle_model: '领克 08', vehicle_no: '浙C8Q318', bio: '轻装露营，按限速稳定行驶。', growth: 3500, level: 3, credit_score: 4.9, discoverable: true, invite_code: 'TDNEAR01', invited_by: null, created_at: ago(70, 'days'), updated_at: now, last_login_at: ago(12, 'minutes') },
       { id: 'u_merchant', openid: null, phone: '13800000008', nickname: '湖畔咖啡站', avatar: '', role: 'merchant', owner_cert_status: 'none', vehicle_model: '', vehicle_no: '', bio: '', growth: 0, level: 1, credit_score: 5, discoverable: false, invite_code: 'TDM001AA', invited_by: null, created_at: ago(90, 'days'), updated_at: now, last_login_at: ago(1, 'days') }
     ],
-    user_settings: ['u_demo', 'u_owner', 'u_guest', 'u_other', 'u_solo'].map((userId, index) => ({
+    user_settings: ['u_demo', 'u_owner', 'u_guest', 'u_other', 'u_solo', 'u_near_team'].map((userId, index) => ({
       id: `settings_${index + 1}`, user_id: userId, allow_team_message: true, allow_marketing: false,
       share_location: true, sentinel_mode: true, emergency_name: index === 0 ? '林女士' : '',
       emergency_phone: index === 0 ? '13900000001' : '', created_at: ago(5, 'days'), updated_at: now
@@ -48,6 +49,8 @@ function createDemoSeed(clock = () => Date.now()) {
     trips: [
       { id: 'trip_001', owner_id: 'u_owner', title: '周六杭州到千岛湖自驾', team_name: '千岛湖周末小队', start_name: '杭州西湖文化广场', start_lng: 120.1551, start_lat: 30.2741, end_name: '千岛湖中心湖区', end_lng: 119.0419, end_lat: 29.6097, route: [{ lng: 120.1551, lat: 30.2741 }, { lng: 119.7, lat: 30.0 }, { lng: 119.0419, lat: 29.6097 }], waypoints: ['富阳服务区'], depart_at: ago(3, 'hours'), days: 1, daily_km: 180, max_cars: 4, current_cars: 2, price_share: 68, depth: 'deep', plans: ['拍照', '美食', 'AA住宿', '互助'], equipment: ['应急药箱', '对讲机'], privacy: 'public', discoverable: true, status: 'started', stage: 'driving', note: '走杭千高速，服务区休息一次。', created_at: ago(7, 'days'), updated_at: ago(3, 'hours'), completed_at: null },
       { id: 'trip_002', owner_id: 'u_other', title: '上海到苏州周末咖啡线', team_name: '苏州咖啡线', start_name: '上海虹桥站', start_lng: 121.327, start_lat: 31.2, end_name: '苏州平江路', end_lng: 120.63, end_lat: 31.31, route: [{ lng: 121.327, lat: 31.2 }, { lng: 120.63, lat: 31.31 }], waypoints: [], depart_at: later(8, 'days'), days: 1, daily_km: 120, max_cars: 3, current_cars: 1, price_share: 45, depth: 'light', plans: ['拼桌', '同逛'], equipment: ['宠物友好'], privacy: 'public', discoverable: true, status: 'recruiting', stage: 'forming', note: '慢节奏咖啡路线。', created_at: ago(2, 'days'), updated_at: now, completed_at: null }
+      ,{ id: 'trip_near', owner_id: 'u_near_team', title: '富阳到杭州轻野返程', team_name: '轻野露营队', start_name: '富阳服务区', start_lng: 119.9, start_lat: 30.1, end_name: '杭州奥体中心', end_lng: 120.3, end_lat: 30.35, route: [{ lng: 119.9, lat: 30.1 }, { lng: 120.3, lat: 30.35 }], waypoints: [], depart_at: later(1, 'days'), days: 1, daily_km: 90, max_cars: 4, current_cars: 1, price_share: 35, depth: 'medium', plans: ['拼桌', '露营'], equipment: ['应急电源'], privacy: 'public', discoverable: true, status: 'recruiting', stage: 'forming', note: '与千岛湖方向相反，下午返回杭州。', created_at: ago(1, 'days'), updated_at: now, completed_at: null }
+      ,{ id: 'trip_history', owner_id: 'u_demo', title: '杭州到莫干山秋日同行', team_name: '莫干山慢行小队', start_name: '杭州西站', start_lng: 120.026, start_lat: 30.298, end_name: '莫干山风景区', end_lng: 119.88, end_lat: 30.60, route: [{ lng: 120.026, lat: 30.298 }, { lng: 119.95, lat: 30.44 }, { lng: 119.88, lat: 30.60 }], waypoints: ['德清服务区'], depart_at: ago(20, 'days'), days: 2, daily_km: 110, max_cars: 4, current_cars: 1, price_share: 58, depth: 'medium', plans: ['拍照', 'AA住宿'], equipment: ['应急药箱'], privacy: 'public', discoverable: true, status: 'completed', stage: 'completed', note: '历史同行群仍可继续分享照片。', created_at: ago(25, 'days'), updated_at: ago(18, 'days'), completed_at: ago(18, 'days') }
     ],
     trip_applications: [
       { id: 'app_001', trip_id: 'trip_002', user_id: 'u_guest', message: '路线顺路，希望加入。', status: 'pending', reviewed_by: null, created_at: ago(1, 'hours'), reviewed_at: null }
@@ -56,22 +59,30 @@ function createDemoSeed(clock = () => Date.now()) {
       { id: 'tm_001', trip_id: 'trip_001', user_id: 'u_owner', role: 'owner', status: 'active', joined_at: ago(7, 'days'), left_at: null, leave_reason: '', last_location_at: ago(1, 'minutes'), deviation_started_at: null },
       { id: 'tm_002', trip_id: 'trip_001', user_id: 'u_demo', role: 'member', status: 'active', joined_at: ago(6, 'days'), left_at: null, leave_reason: '', last_location_at: ago(2, 'minutes'), deviation_started_at: null },
       { id: 'tm_003', trip_id: 'trip_002', user_id: 'u_other', role: 'owner', status: 'active', joined_at: ago(2, 'days'), left_at: null, leave_reason: '', last_location_at: ago(10, 'minutes'), deviation_started_at: null }
+      ,{ id: 'tm_near', trip_id: 'trip_near', user_id: 'u_near_team', role: 'owner', status: 'active', joined_at: ago(1, 'days'), left_at: null, leave_reason: '', last_location_at: ago(4, 'minutes'), deviation_started_at: null }
+      ,{ id: 'tm_history', trip_id: 'trip_history', user_id: 'u_demo', role: 'owner', status: 'active', joined_at: ago(25, 'days'), left_at: null, leave_reason: '', last_location_at: ago(18, 'days'), deviation_started_at: null }
     ],
     locations: [
       { id: 'loc_001', user_id: 'u_owner', trip_id: 'trip_001', lng: 119.72, lat: 30.01, speed: 62, altitude: 83, accuracy: 8, bearing: 245, reported_at: ago(1, 'minutes'), expires_at: later(24, 'hours') },
       { id: 'loc_002', user_id: 'u_demo', trip_id: 'trip_001', lng: 119.78, lat: 30.04, speed: 58, altitude: 79, accuracy: 10, bearing: 240, reported_at: ago(2, 'minutes'), expires_at: later(24, 'hours') },
       { id: 'loc_003', user_id: 'u_other', trip_id: 'trip_002', lng: 121.2, lat: 31.22, speed: 0, altitude: 12, accuracy: 12, bearing: 0, reported_at: ago(10, 'minutes'), expires_at: later(24, 'hours') },
       { id: 'loc_solo', user_id: 'u_solo', trip_id: null, lng: 120.18, lat: 30.30, speed: 0, altitude: 76, accuracy: 8, bearing: 0, reported_at: ago(8, 'minutes'), expires_at: later(52, 'minutes') }
+      ,{ id: 'loc_near', user_id: 'u_near_team', trip_id: 'trip_near', lng: 120.20, lat: 30.29, speed: 54, altitude: 72, accuracy: 9, bearing: 45, reported_at: ago(4, 'minutes'), expires_at: later(24, 'hours') }
+      ,{ id: 'loc_history_1', user_id: 'u_demo', trip_id: 'trip_history', lng: 120.026, lat: 30.298, speed: 0, altitude: 22, accuracy: 8, bearing: 0, reported_at: ago(20, 'days'), expires_at: ago(19, 'days') }
+      ,{ id: 'loc_history_2', user_id: 'u_demo', trip_id: 'trip_history', lng: 119.95, lat: 30.44, speed: 68, altitude: 96, accuracy: 8, bearing: 330, reported_at: ago(19, 'days'), expires_at: ago(18, 'days') }
+      ,{ id: 'loc_history_3', user_id: 'u_demo', trip_id: 'trip_history', lng: 119.88, lat: 30.60, speed: 0, altitude: 246, accuracy: 7, bearing: 0, reported_at: ago(18, 'days'), expires_at: ago(17, 'days') }
     ],
     messages: [
       { id: 'msg_001', conversation_type: 'team', conversation_id: 'trip_001', sender_id: 'u_owner', message_type: 'text', content: '前方富阳服务区休息十分钟。', media_url: '', metadata: {}, created_at: ago(18, 'minutes'), deleted_at: null },
       { id: 'msg_002', conversation_type: 'team', conversation_id: 'trip_001', sender_id: 'u_demo', message_type: 'text', content: '收到，我在后方约 8km。', media_url: '', metadata: {}, created_at: ago(15, 'minutes'), deleted_at: null },
       { id: 'msg_003', conversation_type: 'poi', conversation_id: 'poi_001', sender_id: 'u_guest', message_type: 'text', content: '95号有货，排队约15分钟。', media_url: '', metadata: {}, created_at: ago(25, 'minutes'), deleted_at: null }
+      ,{ id: 'msg_history', conversation_type: 'team', conversation_id: 'trip_history', sender_id: 'u_demo', message_type: 'image', content: '[图片] 莫干山同行合影', media_url: 'https://example.invalid/moganshan-memory.jpg', metadata: {}, created_at: ago(16, 'days'), deleted_at: null }
     ],
     conversation_members: [
       { id: 'cm_001', conversation_type: 'team', conversation_id: 'trip_001', user_id: 'u_owner', role: 'owner', unread_count: 1, joined_at: ago(7, 'days'), left_at: null, last_read_at: ago(20, 'minutes') },
       { id: 'cm_002', conversation_type: 'team', conversation_id: 'trip_001', user_id: 'u_demo', role: 'member', unread_count: 1, joined_at: ago(6, 'days'), left_at: null, last_read_at: ago(18, 'minutes') },
       { id: 'cm_003', conversation_type: 'poi', conversation_id: 'poi_001', user_id: 'u_guest', role: 'member', unread_count: 0, joined_at: ago(1, 'days'), left_at: null, last_read_at: ago(25, 'minutes') }
+      ,{ id: 'cm_history', conversation_type: 'team', conversation_id: 'trip_history', user_id: 'u_demo', role: 'owner', unread_count: 0, joined_at: ago(25, 'days'), left_at: null, last_read_at: ago(15, 'days') }
     ],
     follows: [
       { id: 'follow_001', follower_id: 'u_demo', target_type: 'user', target_id: 'u_other', created_at: ago(2, 'days') }
@@ -137,8 +148,16 @@ function createDemoSeed(clock = () => Date.now()) {
     system_settings: [
       { id: 'setting_coupon_budget', setting_key: 'coupon_budget', value: { monthlyTotal: 50000, monthlyUserLimit: 50 }, updated_by: 'admin_ops', updated_at: now },
       { id: 'setting_invite_rewards', setting_key: 'invite_rewards', value: { tiers: [{ firstOrders: 1, reward: 5 }, { firstOrders: 3, reward: 10 }, { firstOrders: 5, reward: 20 }, { firstOrders: 10, reward: 50 }] }, updated_by: 'admin_ops', updated_at: now },
-      { id: 'setting_assessment', setting_key: 'merchant_assessment', value: { gold: { minScore: 90, commissionRate: 0.08 }, silver: { minScore: 75, commissionRate: 0.1 }, bronze: { minScore: 0, commissionRate: 0.12 } }, updated_by: 'admin_ops', updated_at: now },
+      { id: 'setting_assessment', setting_key: 'merchant_assessment', value: {
+        bronze: { minScore: 0, commissionRate: 0.12, benefit: '基础展示与标准结算' },
+        silver: { minScore: 75, commissionRate: 0.1, benefit: '更低佣金与路线推荐' },
+        gold: { minScore: 90, commissionRate: 0.08, benefit: '优先推荐与活动资源位' },
+        diamond: { minScore: 98, commissionRate: 0.06, benefit: '最高推荐权重与专属运营支持' }
+      }, updated_by: 'admin_ops', updated_at: now },
       { id: 'setting_auto_reply', setting_key: 'support_auto_reply', value: { enabled: true, text: '客服已收到你的问题，将尽快处理。' }, updated_by: 'admin_ops', updated_at: now }
+    ],
+    audit_logs: [
+      { id: 'audit_demo_001', actor_type: 'admin', actor_id: 'admin_ops', method: 'PUT', path: '/api/ops/certifications/:certificationId', status_code: 200, ip: '127.0.0.1', metadata: { params: { certificationId: 'cert_001' } }, created_at: ago(4, 'days') }
     ]
   };
 }

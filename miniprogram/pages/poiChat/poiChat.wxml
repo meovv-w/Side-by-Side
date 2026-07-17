@@ -1,8 +1,10 @@
 <view class="poi-page">
-  <view class="room-header"><view><view class="room-name">{{room.name}}</view><view class="room-meta">{{room.locationName}} · {{room.status==='archived'?'已归档':room.online+'人在线'}}</view></view><button class="follow-button" bindtap="follow">{{room.followed?'已关注':'关注'}}</button></view>
+  <view class="room-header"><view><view class="room-name">{{room.name}}</view><view class="room-meta">{{room.locationName || room.location}} · {{room.status==='archived'?'已归档':room.online+'人在线'}}</view></view><view class="room-actions"><button class="follow-button" bindtap="follow">{{room.followed?'已关注':'关注'}}</button><button class="topic-menu" bindtap="menu">•••</button></view></view>
   <scroll-view class="poi-messages" scroll-y scroll-into-view="{{scrollTarget}}">
-    <view wx:if="{{room.status==='archived'}}" class="archive-tip">历史话题再次发言后会恢复活跃</view>
-    <view wx:for="{{messages}}" wx:key="_id" id="{{item.anchor}}" class="poi-message"><view class="avatar small">{{item.avatarText}}</view><view><view class="message-meta">{{item.nickname}} · {{item.createdAt}}</view><image wx:if="{{item.type==='image'}}" class="message-image" src="{{item.content}}" mode="aspectFill"></image><view wx:else class="message-bubble">{{item.content}}</view></view></view>
+    <view wx:if="{{readOnlyArchived}}" class="archive-tip">该历史话题已归档并保留，只可回顾</view>
+    <view wx:elif="{{room.status==='archived'}}" class="archive-tip">你是新的到访者，发言后话题会恢复活跃</view>
+    <view wx:for="{{messages}}" wx:key="_id" id="{{item.anchor}}" class="poi-message" data-id="{{item._id}}" bindlongpress="messageAction"><view class="avatar small">{{item.avatarText}}</view><view class="poi-message-main"><view class="message-meta">{{item.nickname}} · {{item.createdAt}}</view><view wx:if="{{item.metadata.replyTo}}" class="reply-quote">回复 {{item.metadata.replyTo.nickname}}：{{item.metadata.replyTo.content}}</view><image wx:if="{{item.type==='image'}}" class="message-image" src="{{item.content}}" mode="aspectFill"></image><view wx:else class="message-bubble">{{item.content}}</view></view></view>
   </scroll-view>
-  <view class="poi-composer"><button class="poi-image" bindtap="image">＋</button><input placeholder="分享这个地点的实时信息" value="{{content}}" bindinput="input" confirm-type="send" bindconfirm="send"/><button bindtap="send">发送</button></view>
+  <view wx:if="{{readOnlyArchived}}" class="archived-composer">历史话题只读</view>
+  <block wx:else><view wx:if="{{replyTo}}" class="reply-composer"><view><text>回复 {{replyTo.nickname}}</text><text>{{replyTo.content}}</text></view><button bindtap="cancelReply">×</button></view><view class="poi-composer {{replyTo?'with-reply':''}}"><button class="poi-image" bindtap="image">＋</button><input placeholder="分享这个地点的实时信息" value="{{content}}" bindinput="input" confirm-type="send" bindconfirm="send"/><button bindtap="send">发送</button></view></block>
 </view>

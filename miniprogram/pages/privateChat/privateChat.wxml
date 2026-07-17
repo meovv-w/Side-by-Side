@@ -6,5 +6,5 @@
   </scroll-view>
   <view wx:if="{{blocked}}" class="blocked-bar"><text>你已屏蔽该用户</text><button class="text-btn small-btn" bindtap="block">解除黑名单</button></view>
   <view wx:elif="{{!canSend}}" class="blocked-bar"><text>{{relationText}}</text><button class="primary-btn small-btn" bindtap="follow">关注</button></view>
-  <view wx:else class="private-composer"><button class="more" bindtap="block">•••</button><input placeholder="输入消息" value="{{content}}" bindinput="input" confirm-type="send" bindconfirm="send" /><button class="send" bindtap="send">发送</button></view>
+  <view wx:else class="private-composer"><button class="more" bindtap="menu">•••</button><input placeholder="输入消息" value="{{content}}" bindinput="input" confirm-type="send" bindconfirm="send" /><button class="send" bindtap="send">发送</button></view>
 </view>

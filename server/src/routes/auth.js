@@ -17,6 +17,10 @@ async function authRoutes(app) {
     return reply.ok(session(app, user));
   });
 
+  app.post('/api/auth/wechat/bind', { preHandler: app.requireUser }, async (request, reply) => {
+    return reply.ok(await service.bindWechat(request.actor.sub, request.body && request.body.code));
+  });
+
   app.post('/api/auth/demo', async (request, reply) => {
     assert(app.config.providerMode === 'demo', 404, 'NOT_FOUND', '接口不存在');
     const user = await app.repository.get('users', request.body && request.body.userId || 'u_demo');
@@ -26,6 +30,15 @@ async function authRoutes(app) {
 
   app.post('/api/admin/auth/login', async (request, reply) => {
     const admin = await service.adminLogin(request.body.account, request.body.password);
+    const token = app.jwt.sign({ sub: admin.id, kind: 'admin', role: admin.role, merchantId: admin.merchant_id || null });
+    return reply.ok({ token, actor: { id: admin.id, role: admin.role, merchantId: admin.merchant_id } });
+  });
+
+  app.post('/api/admin/auth/demo', async (request, reply) => {
+    assert(app.config.providerMode === 'demo', 404, 'NOT_FOUND', '接口不存在');
+    const role = request.body && request.body.role === 'merchant' ? 'merchant' : 'ops';
+    const admin = await app.repository.findOne('admins', { role, status: 'active' });
+    assert(admin, 404, 'ADMIN_NOT_FOUND', '演示管理员不存在');
     const token = app.jwt.sign({ sub: admin.id, kind: 'admin', role: admin.role, merchantId: admin.merchant_id || null });
     return reply.ok({ token, actor: { id: admin.id, role: admin.role, merchantId: admin.merchant_id } });
   });
@@ -49,7 +62,7 @@ function inviteClaim(app, token) {
   try {
     const claim = app.jwt.verify(token);
     assert(claim.kind === 'invite' && claim.inviterId, 400, 'INVITE_TOKEN_INVALID', '邀请链接无效');
-    return { inviterId: claim.inviterId, source: claim.source, sourceRef: claim.sourceRef };
+    return { inviterId: claim.inviterId, source: claim.source, sourceRef: claim.sourceRef, merchantId: claim.merchantId || null };
   } catch (error) {
     if (error.statusCode) throw error;
     throw new AppError(400, 'INVITE_TOKEN_INVALID', '邀请链接无效或已过期');

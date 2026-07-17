@@ -10,7 +10,7 @@ Page({
   onShow() {
     if (wx.getStorageSync('tongdao_liveness_returned')) {
       wx.removeStorageSync('tongdao_liveness_returned');
-      this.setData({ 'form.faceVerified': true });
+      this.checkLiveness();
     }
     if (this.data.loaded) return;
     api.getCertification().then(result => {
@@ -24,6 +24,13 @@ Page({
           faceVerified: Boolean(cert.faceVerified)
         }
       });
+    });
+  },
+  checkLiveness() {
+    this.setData({ checking: true });
+    api.checkCertificationLiveness().then(result => {
+      this.setData({ checking: false, 'form.faceVerified': Boolean(result.ok && result.data.passed) });
+      wx.showToast({ title: result.ok && result.data.passed ? '活体检测通过' : result.message || '活体检测尚未完成', icon: result.ok && result.data.passed ? 'success' : 'none' });
     });
   },
   input(event) { this.setData({ [`form.${event.currentTarget.dataset.key}`]: event.detail.value }); },

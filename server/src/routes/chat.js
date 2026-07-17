@@ -11,6 +11,7 @@ async function chatRoutes(app) {
   app.get('/api/poi-topics', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await chat.listTopics(request.actor.sub, request.query || {})));
   app.post('/api/poi-topics', { preHandler: app.requireUser }, async (request, reply) => reply.code(201).ok(await chat.createTopic(request.actor.sub, request.body || {})));
   app.get('/api/poi-topics/:topicId', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await chat.topicDetail(request.actor.sub, request.params.topicId)));
+  app.post('/api/poi-topics/:topicId/presence', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await chat.touchTopicPresence(request.actor.sub, request.params.topicId)));
   app.put('/api/poi-topics/:topicId/follow', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await chat.followTopic(request.actor.sub, request.params.topicId, request.body.enabled !== false)));
   app.post('/api/poi-topics/:topicId/messages', { preHandler: app.requireUser }, async (request, reply) => reply.code(201).ok(await chat.sendTopic(request.actor.sub, request.params.topicId, request.body || {})));
   app.post('/api/traffic-events/:eventId/forward', { preHandler: app.requireUser }, async (request, reply) => reply.code(201).ok(await chat.forwardTraffic(request.actor.sub, request.params.eventId, request.body.tripId)));

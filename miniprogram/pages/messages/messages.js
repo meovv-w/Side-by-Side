@@ -36,15 +36,19 @@ Page({
   },
 
   load() {
-    api.listConversations(this.data.current).then(res => {
+    const selected = api.listConversations(this.data.current);
+    const allConversations = this.data.current === 'all' ? selected : api.listConversations('all');
+    Promise.all([selected, allConversations]).then(([res, allResult]) => {
       if (!res.ok) return;
       const all = res.data.map(item => ({ ...item, ...(labels[item.type] || labels.private) }));
+      const unreadCount = allResult.ok ? allResult.data.reduce((sum, item) => sum + Number(item.unread || 0), 0) : all.reduce((sum, item) => sum + Number(item.unread || 0), 0);
       this.setData({
         conversations: all.filter(item => !item.archived),
         history: all.filter(item => item.archived),
-        unreadCount: all.reduce((sum, item) => sum + Number(item.unread || 0), 0)
+        unreadCount
       });
-      wx.removeTabBarBadge({ index: 1 });
+      if (unreadCount > 0) wx.setTabBarBadge({ index: 1, text: `${Math.min(99, unreadCount)}` });
+      else wx.removeTabBarBadge({ index: 1 });
     });
   },
 
@@ -90,7 +94,10 @@ Page({
       content: '屏蔽后对方不能继续向你发送私信，可在“我的 - 黑名单”中解除。',
       success: result => {
         if (!result.confirm) return;
-        api.setBlocked(userId, true).then(() => wx.showToast({ title: '已加入黑名单' }));
+        api.setBlocked(userId, true).then(() => {
+          wx.showToast({ title: '已加入黑名单' });
+          this.load();
+        });
       }
     });
   }

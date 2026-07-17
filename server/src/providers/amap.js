@@ -1,9 +1,10 @@
 const { AppError, assert } = require('../lib/errors');
 
 class AMapProvider {
-  constructor(config, request = fetch) {
+  constructor(config, request = fetch, clock = () => Date.now()) {
     this.config = config;
     this.request = request;
+    this.clock = clock;
   }
 
   async drivingRoute(origin, destination, waypoints = []) {
@@ -45,12 +46,61 @@ class AMapProvider {
     return this.#get('https://restapi.amap.com/v3/geocode/geo', { address, city });
   }
 
+  async reverseGeocode({ lng, lat }) {
+    return this.#get('https://restapi.amap.com/v3/geocode/regeo', {
+      location: `${Number(lng)},${Number(lat)}`,
+      extensions: 'base'
+    });
+  }
+
   async trafficAround({ lng, lat, radius = 5000 }) {
     return this.#get('https://restapi.amap.com/v3/traffic/status/circle', {
       location: `${Number(lng)},${Number(lat)}`,
       radius: String(Math.min(Number(radius), 5000)),
       extensions: 'all'
     });
+  }
+
+  async trafficIncidents({ adcode, eventTypes, isExpressway } = {}) {
+    assert(/^\d{6}$/.test(String(adcode || '')), 400, 'AMAP_ADCODE_REQUIRED', '交通事件查询缺少城市行政区编码');
+    if (!this.config.trafficClientKey || !this.config.trafficSignerUrl) {
+      return { code: 1, data: [], unavailable: true, reason: 'AMAP_TRAFFIC_NOT_CONFIGURED' };
+    }
+    const timestamp = String(this.clock());
+    const unsigned = {
+      adcode: String(adcode),
+      clientKey: this.config.trafficClientKey,
+      timestamp,
+      eventType: eventTypes === undefined ? this.config.trafficEventTypes : String(eventTypes || ''),
+      isExpressway: isExpressway === undefined ? this.config.trafficExpressway : String(isExpressway || '')
+    };
+    const digest = await this.#trafficDigest(unsigned);
+    const url = new URL(this.config.trafficEventUrl || 'https://et-api.amap.com/event/queryByAdcode');
+    url.search = new URLSearchParams(Object.fromEntries(
+      Object.entries({ ...unsigned, digest }).filter(([, value]) => value !== '')
+    ));
+    const response = await this.request(url);
+    const result = await response.json();
+    if (!response.ok || ![0, 1, '0', '1'].includes(result.code) || Number(result.code) !== 1) {
+      throw new AppError(502, 'AMAP_TRAFFIC_REQUEST_FAILED', result.msg || '高德交通事件服务调用失败', { providerCode: result.code });
+    }
+    return result;
+  }
+
+  async #trafficDigest(unsigned) {
+    const headers = { 'content-type': 'application/json' };
+    if (this.config.trafficSignerToken) headers.authorization = `Bearer ${this.config.trafficSignerToken}`;
+    const response = await this.request(this.config.trafficSignerUrl, {
+      method: 'POST', headers,
+      body: JSON.stringify({ provider: 'amap-traffic-incident', endpoint: this.config.trafficEventUrl, params: unsigned })
+    });
+    let result = null;
+    try { result = await response.json(); } catch (_) {}
+    const digest = result && (result.digest || result.data && result.data.digest);
+    if (!response.ok || !digest) {
+      throw new AppError(502, 'AMAP_TRAFFIC_SIGN_FAILED', result && result.message || '高德交通事件动态摘要生成失败');
+    }
+    return String(digest);
   }
 
   async #get(endpoint, params) {

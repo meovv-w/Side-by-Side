@@ -16,14 +16,15 @@ async function systemRoutes(app) {
 }
 
 async function runJobs(app) {
-  const [orders, groupbuys, topics, trafficTopics, dropouts] = await Promise.all([
+  const [orders, groupbuys, topics, trafficTopics, dropouts, settlements] = await Promise.all([
     app.services.commerce.closeExpiredOrders(),
     app.services.commerce.expireSessions(),
     app.services.chat.archiveInactiveTopics(),
     app.services.chat.createTrafficTopics(),
-    app.services.trips.runDropoutSweep()
+    app.services.trips.runDropoutSweep(),
+    app.services.ops.reconcileSettlements()
   ]);
-  return { orders, groupbuys, topics, trafficTopics, dropouts };
+  return { orders, groupbuys, topics, trafficTopics, dropouts, settlements };
 }
 
 module.exports = systemRoutes;

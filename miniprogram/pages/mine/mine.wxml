@@ -5,7 +5,7 @@
       <view class="profile-name">{{user.nickname || '同路用户'}} <text class="level-badge">Lv.{{user.level || 1}} {{levelTitle}}</text></view>
       <view class="growth-row"><text>同路值 {{user.growth || 0}} / 10000</text><text>{{growthProgress}}%</text></view>
       <view class="progress"><view class="progress-inner" style="width: {{growthProgress}}%"></view></view>
-      <view class="trust-row"><text class="certified">{{user.ownerCertStatus === 'approved' ? '车主已认证' : '认证审核中'}}</text><text>信用 {{user.creditScore || '-'}}</text></view>
+      <view class="trust-row"><text class="certified">{{certStatusText}}</text><text>信用 {{user.creditScore || '-'}}</text></view>
     </view>
     <text class="chevron">›</text>
   </view>

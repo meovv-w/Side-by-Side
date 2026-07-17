@@ -1,7 +1,7 @@
 const { assert } = require('../lib/errors');
 const { id } = require('../lib/ids');
 const { distanceMeters } = require('../lib/geo');
-const { timestamp } = require('../lib/time');
+const { dateTime, timestamp } = require('../lib/time');
 const { publicUser } = require('./users');
 
 function createChatService({ repository, providers, common, clock = () => Date.now() }) {
@@ -83,6 +83,7 @@ function createChatService({ repository, providers, common, clock = () => Date.n
       result.push({
         ...topic, distanceMeters: Number.isFinite(distance) ? Math.round(distance) : null,
         retained: retained.has(topic.id), participantCount: await repository.count('poi_topic_members', { topic_id: topic.id }),
+        onlineCount: await topicOnlineCount(topic.id),
         latestMessage: await repository.findOne('messages', { conversation_type: 'poi', conversation_id: topic.id, deleted_at: null }, { orderBy: ['created_at', 'desc'] })
       });
     }
@@ -115,7 +116,29 @@ function createChatService({ repository, providers, common, clock = () => Date.n
     const topic = await getTopic(topicId);
     const membership = await repository.findOne('poi_topic_members', { topic_id: topicId, user_id: userId });
     const rows = await repository.find('messages', { conversation_type: 'poi', conversation_id: topicId, deleted_at: null }, { orderBy: ['created_at', 'asc'] });
-    return { topic, membership, participantCount: await repository.count('poi_topic_members', { topic_id: topicId }), messages: rows };
+    return {
+      topic, membership,
+      participantCount: await repository.count('poi_topic_members', { topic_id: topicId }),
+      onlineCount: await topicOnlineCount(topicId), messages: rows
+    };
+  }
+
+  async function touchTopicPresence(userId, topicId) {
+    await getTopic(topicId);
+    const existing = await repository.findOne('poi_topic_presence', { topic_id: topicId, user_id: userId });
+    if (existing) await repository.update('poi_topic_presence', existing.id, { last_seen_at: common.now() });
+    else {
+      try {
+        await repository.insert('poi_topic_presence', {
+          id: id('poi_presence'), topic_id: topicId, user_id: userId, last_seen_at: common.now()
+        });
+      } catch (error) {
+        if (error.code !== 'ER_DUP_ENTRY') throw error;
+        const concurrent = await repository.findOne('poi_topic_presence', { topic_id: topicId, user_id: userId });
+        if (concurrent) await repository.update('poi_topic_presence', concurrent.id, { last_seen_at: common.now() });
+      }
+    }
+    return { onlineCount: await topicOnlineCount(topicId), expiresIn: 90 };
   }
 
   async function followTopic(userId, topicId, enabled) {
@@ -139,6 +162,7 @@ function createChatService({ repository, providers, common, clock = () => Date.n
     const topic = await getTopic(topicId);
     assert(topic.status !== 'removed', 403, 'TOPIC_REMOVED', '该话题已被运营下架');
     let member = await repository.findOne('poi_topic_members', { topic_id: topicId, user_id: userId });
+    assert(topic.status !== 'archived' || !member, 409, 'TOPIC_ARCHIVED_READ_ONLY', '历史话题只可浏览；新的到访者发言后可重新激活');
     if (!member) {
       member = await repository.insert('poi_topic_members', {
         id: id('poi_member'), topic_id: topicId, user_id: userId, role: 'member', followed: false, participated: true, joined_at: common.now()
@@ -173,13 +197,18 @@ function createChatService({ repository, providers, common, clock = () => Date.n
         await repository.update('poi_topics', topic.id, { status: 'quiet' });
       }
     }
-    return { archived };
+    const stalePresence = await repository.find('poi_topic_presence', {
+      last_seen_at: { op: 'lt', value: dateTime(clock() - 24 * 3600000) }
+    });
+    for (const presence of stalePresence) await repository.delete('poi_topic_presence', presence.id);
+    return { archived, prunedPresence: stalePresence.map(item => item.id) };
   }
 
   async function createTrafficTopics() {
     const events = await repository.find('traffic_events', { topic_id: null, status: 'active' });
     const created = [];
     for (const event of events) {
+      if (event.ends_at && timestamp(event.ends_at) <= clock()) continue;
       const topic = await repository.insert('poi_topics', {
         id: id('poi_topic'), creator_id: null, name: event.title, location_name: event.description,
         lng: event.lng, lat: event.lat, source: 'traffic_event', event_id: event.id,
@@ -195,7 +224,11 @@ function createChatService({ repository, providers, common, clock = () => Date.n
   async function privateRelation(from, to, conversationId) {
     const blockedBySelf = await repository.findOne('blocks', { user_id: from, target_user_id: to });
     const blockedByTarget = await repository.findOne('blocks', { user_id: to, target_user_id: from });
-    if (blockedBySelf || blockedByTarget) return { type: 'blocked', canSend: false, remaining: 0, reasonCode: 'PRIVATE_BLOCKED', reason: '当前无法向该用户发送私信' };
+    if (blockedBySelf || blockedByTarget) return {
+      type: 'blocked', canSend: false, remaining: 0,
+      blockedBySelf: Boolean(blockedBySelf), blockedByTarget: Boolean(blockedByTarget),
+      reasonCode: 'PRIVATE_BLOCKED', reason: '当前无法向该用户发送私信'
+    };
     const teammate = await areTeammates(from, to);
     if (teammate) return { type: 'teammate', canSend: true, remaining: null };
     const follows = await repository.findOne('follows', { follower_id: from, target_type: 'user', target_id: to });
@@ -246,7 +279,13 @@ function createChatService({ repository, providers, common, clock = () => Date.n
     const ids = member.conversation_id.replace(/^private:/, '').split(':');
     const targetId = ids.find(value => value !== userId);
     const target = targetId ? await repository.get('users', targetId) : null;
-    return target ? { title: target.nickname, status: 'private', targetId, target: publicUser(target, false) } : null;
+    if (!target) return null;
+    const relation = await privateRelation(userId, targetId, member.conversation_id);
+    return {
+      title: `${target.nickname} · ★${target.credit_score}`,
+      status: 'private', targetId, target: publicUser(target, false),
+      relation: relation.type, remaining: relation.remaining
+    };
   }
 
   async function requireConversationMember(type, conversationId, userId) {
@@ -261,6 +300,13 @@ function createChatService({ repository, providers, common, clock = () => Date.n
     return topic;
   }
 
+  async function topicOnlineCount(topicId) {
+    return repository.count('poi_topic_presence', {
+      topic_id: topicId,
+      last_seen_at: { op: 'gte', value: dateTime(clock() - 90 * 1000) }
+    });
+  }
+
   async function sendImGroup(groupId, senderId, message) {
     try { await providers.im.sendGroup(groupId, senderId, imElements(message)); } catch (error) {
       if (error.code !== 'IM_NOT_CONFIGURED') throw error;
@@ -269,7 +315,7 @@ function createChatService({ repository, providers, common, clock = () => Date.n
 
   return {
     conversations, messages, sendTeam, privateThread, sendPrivate, listTopics, createTopic,
-    topicDetail, followTopic, sendTopic, forwardTraffic, archiveInactiveTopics, createTrafficTopics,
+    topicDetail, touchTopicPresence, followTopic, sendTopic, forwardTraffic, archiveInactiveTopics, createTrafficTopics,
     privateRelation
   };
 }

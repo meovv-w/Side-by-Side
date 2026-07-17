@@ -34,6 +34,7 @@
 .trip-side { display: flex; align-items: center; gap: 18rpx; }
 .sharing { padding: 7rpx 12rpx; border-radius: 8rpx; background: #3f4f63; color: #dce3eb; font-size: 20rpx; }
 .sharing.on { background: #0e7c66; color: #fff; }
+.talk { padding: 7rpx 12rpx; border: 1rpx solid #6f8db4; border-radius: 8rpx; color: #fff; font-size: 20rpx; }
 .map-actions { display: grid; grid-template-columns: repeat(6, 1fr); margin: 18rpx 20rpx 0; padding: 16rpx 6rpx; background: #fff; border: 1rpx solid #dfe5ea; border-radius: 16rpx; }
 .action-item { display: flex; height: 104rpx; margin: 0; padding: 0; flex-direction: column; align-items: center; justify-content: center; gap: 7rpx; background: transparent; color: #35424f; font-size: 21rpx; line-height: 1; }
 .action-symbol { display: flex; align-items: center; justify-content: center; width: 52rpx; height: 52rpx; border-radius: 50%; color: #fff; font-size: 31rpx; font-weight: 700; }

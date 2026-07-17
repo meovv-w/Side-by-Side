@@ -28,7 +28,7 @@
           "补给达人",
           "安全先锋"
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "u_owner_001",
@@ -55,7 +55,7 @@
           "五星队长",
           "川藏领航"
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "u_owner_002",
@@ -81,7 +81,7 @@
         "badges": [
           "友善车主"
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "u_solo_001",
@@ -107,7 +107,33 @@
         "badges": [
           "独行探索"
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
+      },
+      {
+        "_id": "u_near_001",
+        "openid": "mock-near-001",
+        "nickname": "晴川",
+        "avatar": "",
+        "role": "owner",
+        "phone": "13800000007",
+        "ownerCertStatus": "approved",
+        "vehicleModel": "领克 08",
+        "vehicleNo": "浙C8Q318",
+        "growth": 3500,
+        "level": 3,
+        "creditScore": 4.9,
+        "inviteCode": "TDNEAR",
+        "discoverable": true,
+        "bio": "轻装露营，按限速稳定行驶。",
+        "distanceKm": 7600,
+        "teamCount": 18,
+        "companionCount": 7,
+        "followerCount": 25,
+        "followingCount": 19,
+        "badges": [
+          "轻野领队"
+        ],
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "u_guest_001",
@@ -133,7 +159,7 @@
         "badges": [
           "新锐队友"
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       }
     ],
     "vehicle_certs": [
@@ -144,8 +170,8 @@
         "plate": "浙A8T520",
         "status": "approved",
         "licensePhoto": "mock-license.jpg",
-        "createdAt": "2026-07-15 09:00",
-        "reviewedAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00",
+        "reviewedAt": "2026-07-17 09:00"
       },
       {
         "_id": "cert_002",
@@ -154,7 +180,7 @@
         "plate": "浙B2K991",
         "status": "pending",
         "licensePhoto": "mock-pending.jpg",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       }
     ],
     "trips": [
@@ -165,7 +191,7 @@
         "title": "周六杭州到千岛湖自驾",
         "from": "杭州西湖文化广场",
         "to": "千岛湖中心湖区",
-        "departAt": "2026-07-20 08:30",
+        "departAt": "2026-07-22 08:30",
         "seatTotal": 4,
         "seatJoined": 3,
         "priceShare": 68,
@@ -217,7 +243,7 @@
             "longitude": 119.86
           }
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "trip_002",
@@ -226,7 +252,7 @@
         "title": "上海到苏州周末咖啡线",
         "from": "上海虹桥站",
         "to": "苏州平江路",
-        "departAt": "2026-07-22 10:00",
+        "departAt": "2026-07-24 10:00",
         "seatTotal": 3,
         "seatJoined": 1,
         "priceShare": 45,
@@ -267,7 +293,7 @@
             "longitude": 121.3188
           }
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "trip_003",
@@ -277,7 +303,7 @@
         "teamName": "黄山晨雾小队",
         "from": "杭州奥体中心",
         "to": "黄山风景区南门",
-        "departAt": "2026-07-29 07:30",
+        "departAt": "2026-07-31 07:30",
         "seatTotal": 5,
         "seatJoined": 1,
         "priceShare": 90,
@@ -322,7 +348,57 @@
             "longitude": 120.2105
           }
         ],
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
+      },
+      {
+        "_id": "trip_004",
+        "ownerId": "u_near_001",
+        "ownerName": "晴川",
+        "title": "富阳到杭州轻野返程",
+        "teamName": "轻野露营队",
+        "from": "富阳服务区",
+        "to": "杭州奥体中心",
+        "departAt": "2026-07-18 15:00",
+        "seatTotal": 4,
+        "seatJoined": 1,
+        "priceShare": 35,
+        "status": "open",
+        "matchRate": 21,
+        "days": 1,
+        "stage": "forming",
+        "depth": "中度",
+        "plans": [
+          "拼桌",
+          "露营"
+        ],
+        "equipment": [
+          "应急电源"
+        ],
+        "dailyKm": 90,
+        "waypoints": [],
+        "remainingKm": 42,
+        "privacy": "public",
+        "discoverable": true,
+        "note": "与千岛湖方向相反，下午返回杭州。",
+        "route": [
+          {
+            "latitude": 30.1,
+            "longitude": 119.9
+          },
+          {
+            "latitude": 30.35,
+            "longitude": 120.3
+          }
+        ],
+        "teammates": [
+          {
+            "userId": "u_near_001",
+            "nickname": "晴川",
+            "latitude": 30.29,
+            "longitude": 120.2
+          }
+        ],
+        "createdAt": "2026-07-17 09:00"
       }
     ],
     "trip_members": [
@@ -332,7 +408,7 @@
         "userId": "u_owner_001",
         "nickname": "阿成车主",
         "role": "owner",
-        "joinedAt": "2026-07-15 09:00"
+        "joinedAt": "2026-07-17 09:00"
       },
       {
         "_id": "tm_002",
@@ -340,7 +416,7 @@
         "userId": "u_guest_001",
         "nickname": "小北",
         "role": "passenger",
-        "joinedAt": "2026-07-15 09:00"
+        "joinedAt": "2026-07-17 09:00"
       },
       {
         "_id": "tm_003",
@@ -348,7 +424,7 @@
         "userId": "u_owner_002",
         "nickname": "南风",
         "role": "owner",
-        "joinedAt": "2026-07-15 09:00"
+        "joinedAt": "2026-07-17 09:00"
       },
       {
         "_id": "tm_004",
@@ -356,7 +432,7 @@
         "userId": "u_mock_001",
         "nickname": "林小路",
         "role": "passenger",
-        "joinedAt": "2026-07-15 09:00"
+        "joinedAt": "2026-07-17 09:00"
       },
       {
         "_id": "tm_005",
@@ -364,7 +440,15 @@
         "userId": "u_mock_001",
         "nickname": "林小路",
         "role": "owner",
-        "joinedAt": "2026-07-15 09:00"
+        "joinedAt": "2026-07-17 09:00"
+      },
+      {
+        "_id": "tm_006",
+        "tripId": "trip_004",
+        "userId": "u_near_001",
+        "nickname": "晴川",
+        "role": "owner",
+        "joinedAt": "2026-07-17 09:00"
       }
     ],
     "trip_requests": [
@@ -376,7 +460,7 @@
         "vehicleModel": "大众 ID.4",
         "message": "我从杭州东出发，可以提前到集合点，也会带应急电源。",
         "status": "pending",
-        "createdAt": "2026-07-14 10:18"
+        "createdAt": "2026-07-16 10:18"
       }
     ],
     "messages": [
@@ -461,6 +545,17 @@
         "targetId": "u_guest_001"
       },
       {
+        "_id": "conv_private_solo",
+        "type": "private",
+        "title": "山野独行 · ★4.9",
+        "lastMessage": "我在你东侧三公里，也准备去千岛湖。",
+        "time": "10:36",
+        "meta": "可回复 1 条",
+        "relation": "incoming",
+        "unread": 1,
+        "targetId": "u_solo_001"
+      },
+      {
         "_id": "conv_poi_old",
         "type": "poi",
         "title": "二郎山隧道施工",
@@ -473,6 +568,18 @@
       }
     ],
     "notifications": [
+      {
+        "_id": "notice_safety",
+        "type": "emergency",
+        "title": "前方安全提醒",
+        "content": "前方道路施工并线，请车队减速保持车距。",
+        "priority": "high",
+        "read": false,
+        "data": {
+          "tripId": "trip_001"
+        },
+        "createdAt": "2026-07-01 10:38"
+      },
       {
         "_id": "notice_001",
         "type": "trip",
@@ -491,25 +598,31 @@
         "_id": "poi_001",
         "name": "千岛湖服务区补给讨论",
         "location": "杭千高速服务区",
+        "latitude": 30.18,
+        "longitude": 119.93,
         "online": 6,
         "status": "active",
         "lastMessage": "咖啡双人券还有名额",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "poi_002",
-        "name": "苏州平江路停车位",
-        "location": "苏州平江路",
+        "name": "富阳服务区充电排队",
+        "location": "富阳服务区",
+        "latitude": 30.23,
+        "longitude": 120.02,
         "online": 3,
         "status": "quiet",
-        "lastMessage": "东侧停车场还有空位",
+        "lastMessage": "东区还有两个快充空位",
         "followed": false,
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "poi_003",
         "name": "二郎山隧道施工",
         "location": "G318 二郎山段",
+        "latitude": 29.91,
+        "longitude": 119.48,
         "online": 0,
         "status": "archived",
         "lastMessage": "施工已结束，道路恢复通行",
@@ -567,6 +680,14 @@
         "nickname": "小北",
         "content": "我走慢道，你们到哪了？",
         "createdAt": "2026-07-01 10:32"
+      },
+      {
+        "_id": "pm_solo",
+        "fromUserId": "u_solo_001",
+        "toUserId": "u_mock_001",
+        "nickname": "山野独行",
+        "content": "我在你东侧三公里，也准备去千岛湖。",
+        "createdAt": "2026-07-01 10:36"
       }
     ],
     "follows": [
@@ -575,21 +696,28 @@
         "followerId": "u_mock_001",
         "targetType": "user",
         "targetId": "u_owner_002",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "follow_002",
         "followerId": "u_owner_002",
         "targetType": "user",
         "targetId": "u_mock_001",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "follow_003",
         "followerId": "u_mock_001",
         "targetType": "team",
         "targetId": "trip_001",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
+      },
+      {
+        "_id": "follow_solo",
+        "followerId": "u_solo_001",
+        "targetType": "user",
+        "targetId": "u_mock_001",
+        "createdAt": "2026-07-17 09:00"
       }
     ],
     "blocked_users": [],
@@ -622,7 +750,7 @@
         "minPeople": 3,
         "joined": 2,
         "stock": 50,
-        "validUntil": "2026-07-25 23:59",
+        "validUntil": "2026-07-27 23:59",
         "description": "美式/拿铁任选两杯，到店出示核销码使用。",
         "productId": "product_mock_001",
         "merchantId": "m_001",
@@ -665,7 +793,7 @@
         "minPeople": 4,
         "joined": 3,
         "stock": 80,
-        "validUntil": "2026-07-23 23:59",
+        "validUntil": "2026-07-25 23:59",
         "description": "坚果、能量棒、湿巾组合，适合车队路上共享。",
         "productId": "product_mock_002",
         "merchantId": "m_002",
@@ -697,8 +825,8 @@
         "amount": 19.9,
         "status": "paid",
         "verifyCode": "620318",
-        "createdAt": "2026-07-15 09:00",
-        "expiresAt": "2026-07-23 23:59",
+        "createdAt": "2026-07-17 09:00",
+        "expiresAt": "2026-07-25 23:59",
         "refundStatus": "none"
       },
       {
@@ -727,7 +855,7 @@
         "source": "qrcode",
         "bonus": 10,
         "status": "registered",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "inv_002",
@@ -736,7 +864,7 @@
         "source": "link",
         "bonus": 20,
         "status": "ordered",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       }
     ],
     "coupons": [
@@ -748,7 +876,7 @@
         "amount": 10,
         "threshold": 30,
         "status": "unused",
-        "expireAt": "2026-08-14",
+        "expireAt": "2026-08-16",
         "verifyCode": "CP520001",
         "scope": "全平台拼团可用"
       },
@@ -761,7 +889,7 @@
         "amount": 8,
         "threshold": 29,
         "status": "unused",
-        "expireAt": "2026-07-29",
+        "expireAt": "2026-07-31",
         "verifyCode": "CP520002",
         "scope": "仅湖畔咖啡站可用"
       },
@@ -773,8 +901,8 @@
         "amount": 5,
         "threshold": 20,
         "status": "used",
-        "expireAt": "2026-07-25",
-        "usedAt": "2026-06-25 08:20",
+        "expireAt": "2026-07-27",
+        "usedAt": "2026-06-27 08:20",
         "scope": "补给类商品可用"
       }
     ],
@@ -784,14 +912,14 @@
         "userId": "u_mock_001",
         "delta": 10,
         "reason": "邀请好友注册",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       },
       {
         "_id": "gl_002",
         "userId": "u_mock_001",
         "delta": 20,
         "reason": "完成拼团订单",
-        "createdAt": "2026-07-15 09:00"
+        "createdAt": "2026-07-17 09:00"
       }
     ],
     "next_trips": [
@@ -800,7 +928,7 @@
         "userId": "u_mock_001",
         "from": "杭州西湖文化广场",
         "to": "千岛湖中心湖区",
-        "departAt": "2026-07-29 09:00",
+        "departAt": "2026-07-31 09:00",
         "note": "希望找一支周末轻松出发的队伍",
         "status": "draft"
       }
@@ -847,12 +975,12 @@
         "category": "订单核销",
         "title": "核销码无法识别",
         "status": "open",
-        "createdAt": "2026-07-15 09:00",
+        "createdAt": "2026-07-17 09:00",
         "messages": [
           {
             "sender": "user",
             "content": "商家扫码后提示找不到订单。",
-            "createdAt": "2026-07-15 09:00"
+            "createdAt": "2026-07-17 09:00"
           }
         ]
       },
@@ -863,12 +991,12 @@
         "category": "商家信息",
         "title": "商家营业时间变更",
         "status": "replied",
-        "createdAt": "2026-07-15 09:00",
+        "createdAt": "2026-07-17 09:00",
         "messages": [
           {
             "sender": "ops",
             "content": "已联系商家更新营业时间。",
-            "createdAt": "2026-07-15 09:00"
+            "createdAt": "2026-07-17 09:00"
           }
         ]
       }
@@ -927,14 +1055,15 @@
         "_id": "layer_004",
         "type": "team",
         "icon": "car",
-        "title": "318经典车队",
-        "subtitle": "同向车队 · 5人",
-        "desc": "队长阿杰 · 前方 8km · 成都到拉萨",
-        "targetId": "trip_001",
-        "leaderId": "u_owner_001",
-        "distanceKm": 8,
-        "latitude": 30.31,
-        "longitude": 120.18
+        "title": "轻野露营队",
+        "subtitle": "逆向车队 · 1人",
+        "desc": "队长晴川 · 前方 6km · 富阳到杭州",
+        "targetId": "trip_004",
+        "leaderId": "u_near_001",
+        "distanceKm": 6,
+        "direction": "opposite",
+        "latitude": 30.29,
+        "longitude": 120.2
       },
       {
         "_id": "layer_driver",
@@ -965,12 +1094,13 @@
         "_id": "layer_006",
         "type": "team",
         "icon": "car",
-        "title": "轻野露营队",
-        "subtitle": "逆向车队 · 3人",
-        "desc": "队长晴川 · 后方 14km · 千岛湖到杭州",
-        "leaderId": "u_guest_001",
+        "title": "苏州咖啡线",
+        "subtitle": "同向车队 · 1人",
+        "desc": "队长南风 · 后方 14km · 上海到苏州",
+        "targetId": "trip_002",
+        "leaderId": "u_owner_002",
         "distanceKm": 14,
-        "direction": "opposite",
+        "direction": "same",
         "latitude": 29.91,
         "longitude": 119.48
       }
@@ -978,5 +1108,5 @@
   },
   "mode": "local-product-mode",
   "source": "miniprogram/utils/mockStore.js",
-  "generatedAt": "2026-07-15T14:16:24.832Z"
+  "generatedAt": "2026-07-17T07:48:56.536Z"
 }

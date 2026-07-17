@@ -1,4 +1,3 @@
-const { id } = require('../lib/ids');
 const { assert } = require('../lib/errors');
 
 async function opsRoutes(app) {
@@ -21,6 +20,7 @@ async function opsRoutes(app) {
   app.get('/api/ops/orders', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.orders(request.query || {})));
   app.get('/api/ops/refunds', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.refunds(request.query.status)));
   app.put('/api/ops/refunds/:refundId', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await commerce.reviewRefund(request.actor.sub, request.params.refundId, request.body.approved === true, request.body.reason)));
+  app.post('/api/ops/refunds/:refundId/retry', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await commerce.retryRefund(request.params.refundId)));
   app.get('/api/ops/settlements', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.settlements(request.query.status)));
   app.post('/api/ops/settlements/:settlementId/trigger', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.triggerSettlement(request.actor.sub, request.params.settlementId)));
   app.get('/api/ops/coupon-redemptions', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.couponRedemptions(request.query.status)));
@@ -41,15 +41,7 @@ async function opsRoutes(app) {
   app.get('/api/ops/traffic-events', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.trafficEvents(request.query.status)));
   app.put('/api/ops/traffic-events/:eventId', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.reviewTrafficEvent(request.actor.sub, request.params.eventId, request.body.approved === true, request.body.reason)));
   app.post('/api/ops/traffic-events', { preHandler: app.requireOps }, async (request, reply) => {
-    const body = request.body || {};
-    assert(body.title && Number.isFinite(Number(body.lng)) && Number.isFinite(Number(body.lat)), 400, 'TRAFFIC_EVENT_FIELDS_REQUIRED', '路况标题和位置不能为空');
-    return reply.code(201).ok(await app.repository.insert('traffic_events', {
-      id: id('traffic'), provider_id: body.providerId || null, source: 'ops', reporter_id: null, event_type: body.eventType || 'incident',
-      title: String(body.title).slice(0, 200), description: String(body.description || '').slice(0, 1000),
-      lng: Number(body.lng), lat: Number(body.lat), severity: Number(body.severity || 1), starts_at: body.startsAt || app.services.common.now(),
-      ends_at: body.endsAt || null, status: 'active', reviewed_by: request.actor.sub, review_reason: '',
-      reviewed_at: app.services.common.now(), topic_id: null, created_at: app.services.common.now()
-    }));
+    return reply.code(201).ok(await ops.createTrafficEvent(request.actor.sub, request.body || {}));
   });
 
   app.get('/api/ops/support/tickets', { preHandler: app.requireOps }, async (request, reply) => reply.ok(await ops.tickets(request.query.status)));

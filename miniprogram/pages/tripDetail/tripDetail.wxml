@@ -1,6 +1,6 @@
 <view class="page trip-detail with-footer" wx:if="{{trip}}">
   <view class="trip-hero">
-    <view class="row"><text class="tag {{trip.status === 'open' ? 'success' : 'neutral'}}">{{trip.statusText}}</text><text class="match">顺路率 {{trip.matchRate || 100}}%</text></view>
+    <view class="row"><text class="tag {{trip.status === 'open' ? 'success' : 'neutral'}}">{{trip.statusText}}</text><text wx:if="{{trip.matchRate != null}}" class="match">顺路率 {{trip.matchRate}}%</text></view>
     <view class="hero-title">{{trip.from}} → {{trip.to}}</view>
     <view class="hero-subtitle">{{trip.teamName}} · 队长 {{trip.ownerName}}</view>
     <view class="hero-stats">
@@ -44,7 +44,7 @@
   <view class="members-card">
     <view wx:for="{{members}}" wx:key="_id" class="member" data-id="{{item.userId}}" bindtap="openMember">
       <view class="avatar small">{{item.avatarText}}</view>
-      <view class="member-main"><view>{{item.nickname}} <text wx:if="{{item.role === 'owner'}}" class="tag warning">队长</text><text wx:if="{{item.status === 'leave_pending'}}" class="tag neutral">待退出</text></view><view class="caption">Lv.{{item.level}} · 信用 {{item.creditScore}}</view></view>
+      <view class="member-main"><view>{{item.nickname}} <text wx:if="{{item.role === 'owner'}}" class="tag warning">队长</text><text wx:if="{{item.certified}}" class="tag success">已认证</text><text wx:if="{{item.status === 'leave_pending'}}" class="tag neutral">待退出</text></view><view class="caption">Lv.{{item.level}} · 信用 {{item.creditScore}}</view></view>
       <button wx:if="{{owned && item.role !== 'owner' && item.status !== 'leave_pending'}}" class="member-remove" catchtap="removeMember" data-id="{{item._id}}">移除</button><text wx:else>›</text>
     </view>
   </view>
@@ -64,7 +64,8 @@
     <button class="secondary-btn" bindtap="greetOwner">先聊聊</button>
     <button wx:if="{{joined}}" class="primary-btn" bindtap="openChat">进入车队群聊</button>
     <button wx:elif="{{requestStatus === 'pending'}}" class="secondary-btn" disabled>等待队长审批</button>
-    <button wx:else class="primary-btn" bindtap="apply">申请加入车队</button>
+    <button wx:elif="{{trip.status === 'open'}}" class="primary-btn" bindtap="apply">申请加入车队</button>
+    <button wx:else class="secondary-btn" disabled>{{trip.status === 'full' ? '车队已满员' : trip.status === 'started' ? '车队已出发' : '行程已结束'}}</button>
   </view>
 </view>
 <view wx:else class="empty">正在加载行程</view>

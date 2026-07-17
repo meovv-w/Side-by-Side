@@ -1,6 +1,7 @@
 const api = require('../../utils/api');
 
 const statusText = {
+  pending: '待支付',
   paid: '待核销',
   used: '已核销',
   refunded: '已退款'
@@ -20,7 +21,7 @@ Page({
       const allOrders = res.data.map(item => ({
         ...item,
         statusText: item.refundStatus === 'pending' ? '退款审核中' : statusText[item.status] || item.status,
-        statusClass: item.refundStatus === 'pending' ? 'warning' : item.status === 'used' ? 'success' : item.status === 'refunded' ? 'neutral' : 'danger'
+        statusClass: item.refundStatus === 'pending' ? 'warning' : item.status === 'used' ? 'success' : item.status === 'refunded' ? 'neutral' : item.status === 'pending' ? 'warning' : 'danger'
       }));
       this.setData({ allOrders }, this.applyFilter);
     });

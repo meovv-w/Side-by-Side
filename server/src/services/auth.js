@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const { assert, AppError } = require('../lib/errors');
 const { id, inviteCode, sixDigitCode } = require('../lib/ids');
+const { addTime } = require('../lib/time');
 
 function createAuthService({ repository, cache, providers, config, common }) {
   async function sendSmsCode(phone) {
@@ -40,12 +41,28 @@ function createAuthService({ repository, cache, providers, config, common }) {
     return user;
   }
 
+  async function bindWechat(userId, code) {
+    const user = await common.getUser(userId);
+    const session = await providers.wechatAuth.exchangeCode(code);
+    const existing = await repository.findOne('users', { openid: session.openid });
+    assert(!existing || existing.id === userId, 409, 'WECHAT_ALREADY_BOUND', '该微信账号已绑定其他同路行账号');
+    const updated = user.openid === session.openid
+      ? user
+      : await repository.update('users', userId, { openid: session.openid, updated_at: common.now() });
+    try { await providers.im.importAccount(updated); } catch (error) {
+      if (error.code !== 'IM_NOT_CONFIGURED') throw error;
+    }
+    return updated;
+  }
+
   async function createUser({ openid = null, phone = null, profile = {}, inviteClaim = null }) {
     const now = common.now();
     const userId = id('user');
     let created;
+    let merchantCouponAward = null;
     await repository.transaction(async tx => {
       const inviter = inviteClaim && inviteClaim.inviterId ? await tx.get('users', inviteClaim.inviterId) : null;
+      const inviteSource = inviteClaim && ['qrcode', 'merchant'].includes(inviteClaim.source) ? inviteClaim.source : 'link';
       created = await tx.insert('users', {
         id: userId, openid, phone, nickname: String(profile.nickname || '同路新用户').slice(0, 80),
         avatar: String(profile.avatar || '').slice(0, 1024), role: 'user', owner_cert_status: 'none',
@@ -60,15 +77,37 @@ function createAuthService({ repository, cache, providers, config, common }) {
       if (inviter) {
         await tx.insert('invites', {
           id: id('invite'), inviter_id: inviter.id, invitee_id: userId,
-          source: inviteClaim.source === 'qrcode' ? 'qrcode' : 'link', source_ref: inviteClaim.sourceRef || null,
+          source: inviteSource, source_ref: inviteClaim.sourceRef || null,
           status: 'registered', bound_at: now, first_order_at: null, reward_status: 'pending', reward_value: 0
         });
+        if (inviteSource === 'merchant' && inviteClaim.merchantId) {
+          const merchant = await tx.get('merchants', inviteClaim.merchantId);
+          if (merchant && merchant.status === 'approved' && merchant.owner_user_id === inviter.id) {
+            const coupons = await tx.find('coupons', { owner_type: 'merchant', owner_id: merchant.id, status: 'active' }, { orderBy: ['created_at', 'asc'] });
+            const coupon = coupons.find(item => item.type === 'invite' && Number(item.issued) < Number(item.total));
+            if (coupon) {
+              const instance = await tx.insert('user_coupons', {
+                id: id('user_coupon'), coupon_id: coupon.id, user_id: userId, source: 'merchant_promotion',
+                source_ref: inviteClaim.sourceRef || merchant.id, status: 'unused', issued_at: now,
+                expires_at: addTime(now, Number(coupon.valid_days || 14), 'days'), used_at: null, order_id: null,
+                verify_code: `CP${sixDigitCode()}`
+              });
+              await tx.increment('coupons', coupon.id, { issued: 1 });
+              merchantCouponAward = { merchant, coupon, instance };
+            }
+          }
+        }
       }
     });
     if (created.invited_by) {
       await common.awardGrowth(created.invited_by, 'invite_register', '邀请新用户注册', 'user', created.id);
       await common.notify(created.invited_by, 'invite', '邀请成功', `${created.nickname} 已通过你的邀请注册`, { inviteeId: created.id });
     }
+    if (merchantCouponAward) await common.notify(
+      created.id, 'coupon', '商家拉新券已到账',
+      `${merchantCouponAward.merchant.name}“${merchantCouponAward.coupon.name}”已放入券包`,
+      { couponId: merchantCouponAward.coupon.id, userCouponId: merchantCouponAward.instance.id, merchantId: merchantCouponAward.merchant.id }
+    );
     return created;
   }
 
@@ -84,7 +123,7 @@ function createAuthService({ repository, cache, providers, config, common }) {
     assert(/^1\d{10}$/.test(String(phone || '')), 400, 'PHONE_INVALID', '请输入正确的中国大陆手机号');
   }
 
-  return { sendSmsCode, loginWithSms, loginWithWechat, adminLogin, createUser };
+  return { sendSmsCode, loginWithSms, loginWithWechat, bindWechat, adminLogin, createUser };
 }
 
 function hashCode(phone, code, secret) {

@@ -24,8 +24,8 @@
     "pages/social/social",
     "pages/settings/settings",
     "pages/badges/badges",
-    "pages/createPoiChat/createPoiChat"
-    ,"pages/liveness/liveness"
+    "pages/createPoiChat/createPoiChat",
+    "pages/liveness/liveness"
   ],
   "window": {
     "navigationBarTitleText": "同路行",
@@ -77,6 +77,8 @@
   },
   "requiredPrivateInfos": [
     "getLocation",
-    "chooseLocation"
+    "chooseLocation",
+    "startLocationUpdate",
+    "onLocationChange"
   ]
 }

@@ -9,5 +9,14 @@
   <button class="primary-btn submit" bindtap="submit">提交工单</button>
   <view class="section-header"><view class="section-title">我的工单</view><view class="muted">{{tickets.length}} 条</view></view>
   <view wx:if="{{tickets.length===0}}" class="empty">还没有工单</view>
-  <view wx:for="{{tickets}}" wx:key="_id" class="card ticket"><view class="row"><view class="card-title">{{item.title}}</view><text class="tag {{item.status==='open'?'warning':'success'}}">{{item.status==='open'?'处理中':'已回复'}}</text></view><view class="muted">{{item.category}} · {{item.createdAt}}</view><view wx:if="{{item.lastReply}}" class="reply">客服：{{item.lastReply}}</view></view>
+  <view wx:for="{{tickets}}" wx:key="_id" class="card ticket" data-id="{{item._id}}" bindtap="openTicket"><view class="row"><view class="card-title">{{item.title}}</view><text class="tag {{item.status==='resolved'||item.status==='closed'?'success':'warning'}}">{{item.statusText}}</text></view><view class="muted">{{item.category}} · {{item.createdAt}}</view><view wx:if="{{item.lastReply}}" class="reply">客服：{{item.lastReply}}</view><view class="ticket-link">查看对话 ›</view></view>
+
+  <view wx:if="{{ticketOpen}}" class="mask" bindtap="closeTicket"></view>
+  <view wx:if="{{ticketOpen}}" class="ticket-sheet">
+    <view class="row"><view><view class="title">{{activeTicket.title}}</view><view class="muted">{{activeTicket.statusText}} · {{activeTicket.category}}</view></view><button class="close" bindtap="closeTicket">×</button></view>
+    <scroll-view class="ticket-messages" scroll-y>
+      <view wx:for="{{activeTicket.messages}}" wx:key="createdAt" class="ticket-message {{item.senderType==='user'?'mine':''}}"><view class="message-sender">{{item.senderText}} · {{item.createdAt}}</view><view class="message-content">{{item.content}}</view></view>
+    </scroll-view>
+    <view class="ticket-composer"><input placeholder="继续补充问题或回复客服" value="{{replyContent}}" data-key="replyContent" bindinput="input" confirm-type="send" bindconfirm="reply"/><button bindtap="reply">发送</button></view>
+  </view>
 </view>

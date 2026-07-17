@@ -135,7 +135,19 @@ Page({
   },
 
   chooseLocation() {
-    wx.chooseLocation({ success: location => this.sendContent(`${location.name} · ${location.address}`, 'location') });
+    wx.chooseLocation({
+      success: location => this.sendContent(`${location.name} · ${location.address}`, 'location', {
+        latitude: location.latitude, longitude: location.longitude, name: location.name, address: location.address
+      })
+    });
+  },
+
+  openMessageLocation(event) {
+    const metadata = event.currentTarget.dataset.metadata || {};
+    const latitude = Number(metadata.latitude);
+    const longitude = Number(metadata.longitude);
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return wx.showToast({ title: '该位置没有可用坐标', icon: 'none' });
+    wx.openLocation({ latitude, longitude, name: metadata.name || '共享位置', address: metadata.address || '' });
   },
 
   shareGroupbuy() {
@@ -146,10 +158,18 @@ Page({
         itemList: titles,
         success: result => {
           const item = res.data[result.tapIndex];
-          this.sendContent(`${item.title} · 车队价 ¥${item.price} · ${item.merchantName}`, 'groupbuy');
+          this.sendContent(`${item.title} · 车队价 ¥${item.price} · ${item.merchantName}`, 'groupbuy', {
+            sessionId: item._id, productId: item.productId, merchantId: item.merchantId
+          });
         }
       });
     });
+  },
+
+  openGroupbuy(event) {
+    const sessionId = event.currentTarget.dataset.id;
+    if (!sessionId) return wx.showToast({ title: '该拼团链接已失效', icon: 'none' });
+    wx.navigateTo({ url: `/pages/groupbuyDetail/groupbuyDetail?id=${sessionId}` });
   },
 
   toggleVoice() {

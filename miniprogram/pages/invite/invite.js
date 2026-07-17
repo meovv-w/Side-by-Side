@@ -4,11 +4,20 @@ Page({
   data: { inviteCode: '', sharePath: '', records: [], rewards: [], progress: 0, canBindInviter: false },
   onShow() {
     api.listInvites().then(response => {
-      if (response.ok) this.setData({
-        ...response.data,
-        records: response.data.records.map(item => ({ ...item, avatarText: (item.inviteeName || '同').slice(0, 1) })),
-        progress: Math.min(100, response.data.records.length / 5 * 100)
-      });
+      if (response.ok) {
+        const records = response.data.records.map(item => ({
+          ...item,
+          avatarText: (item.inviteeName || '同').slice(0, 1),
+          sourceText: item.sourceText || ({ qrcode: '扫码注册', link: '分享链接', phone_fallback: '手机号补绑', merchant: '商家推广' }[item.source] || item.source),
+          rewardText: item.rewardText || `+${Number(item.bonus || 0)} 同路值`
+        }));
+        const rewards = response.data.rewards || [];
+        const progressValue = response.data.stats && response.data.stats.firstOrders != null
+          ? Number(response.data.stats.firstOrders)
+          : records.filter(item => item.status === 'ordered').length || records.length;
+        const maxTarget = Math.max(1, ...rewards.map(item => Number(item.target || 0)));
+        this.setData({ ...response.data, records, rewards, progress: Math.min(100, progressValue / maxTarget * 100) });
+      }
     });
   },
   copy() { wx.setClipboardData({ data: this.data.inviteCode }); },

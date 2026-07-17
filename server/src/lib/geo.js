@@ -5,7 +5,7 @@ function toRad(value) {
 }
 
 function distanceMeters(a, b) {
-  if (!a || !b) return Number.POSITIVE_INFINITY;
+  if (!validCoordinate(a) || !validCoordinate(b)) return Number.POSITIVE_INFINITY;
   const dLat = toRad(Number(b.lat) - Number(a.lat));
   const dLng = toRad(Number(b.lng) - Number(a.lng));
   const x = Math.sin(dLat / 2) ** 2 +
@@ -30,7 +30,7 @@ function routeMatchRate(candidate, trip) {
 
 function routePoints(value) {
   const route = Array.isArray(value && value.route)
-    ? value.route.filter(point => Number.isFinite(Number(point.lng)) && Number.isFinite(Number(point.lat)))
+    ? value.route.filter(validCoordinate)
     : [];
   if (route.length >= 2) return route;
   return [value && value.start, value && value.end].filter(Boolean);
@@ -59,6 +59,7 @@ function pathCoverage(points, route) {
 }
 
 function pointToSegmentDistance(point, a, b) {
+  if (![point, a, b].every(validCoordinate)) return Number.POSITIVE_INFINITY;
   const x = Number(point.lng); const y = Number(point.lat);
   const x1 = Number(a.lng); const y1 = Number(a.lat);
   const x2 = Number(b.lng); const y2 = Number(b.lat);
@@ -68,6 +69,13 @@ function pointToSegmentDistance(point, a, b) {
   return distanceMeters(point, { lng: x1 + t * dx, lat: y1 + t * dy });
 }
 
+function validCoordinate(point) {
+  if (!point || point.lng == null || point.lat == null) return false;
+  const lng = Number(point.lng);
+  const lat = Number(point.lat);
+  return Number.isFinite(lng) && Number.isFinite(lat) && lng >= -180 && lng <= 180 && lat >= -90 && lat <= 90;
+}
+
 function distanceFromRoute(point, route = []) {
   if (!point || route.length < 2) return Number.POSITIVE_INFINITY;
   let best = Number.POSITIVE_INFINITY;
@@ -75,4 +83,4 @@ function distanceFromRoute(point, route = []) {
   return best;
 }
 
-module.exports = { distanceMeters, routeMatchRate, distanceFromRoute };
+module.exports = { distanceMeters, routeMatchRate, distanceFromRoute, validCoordinate };

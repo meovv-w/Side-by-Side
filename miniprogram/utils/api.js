@@ -26,6 +26,11 @@ function getUserById(db, userId) {
 }
 
 function relationFor(db, fromUserId, toUserId) {
+  const blocked = (db.blocked_users || []).some(item =>
+    item.userId === fromUserId && item.targetId === toUserId
+    || item.userId === toUserId && item.targetId === fromUserId
+  );
+  if (blocked) return 'blocked';
   const isTeammate = (db.trip_members || []).some(member => {
     if (member.userId !== fromUserId) return false;
     return (db.trip_members || []).some(other => other.tripId === member.tripId && other.userId === toUserId);
@@ -36,6 +41,14 @@ function relationFor(db, fromUserId, toUserId) {
   const followsTarget = follows.some(item => item.followerId === fromUserId && item.targetType === 'user' && item.targetId === toUserId);
   const followedBack = follows.some(item => item.followerId === toUserId && item.targetType === 'user' && item.targetId === fromUserId);
   if (followsTarget && followedBack) return 'mutual';
+  const messages = (db.private_messages || []).filter(item =>
+    item.fromUserId === fromUserId && item.toUserId === toUserId
+    || item.fromUserId === toUserId && item.toUserId === fromUserId
+  );
+  const sentByCurrent = messages.some(item => item.fromUserId === fromUserId);
+  const sentByTarget = messages.some(item => item.fromUserId === toUserId);
+  if (sentByCurrent && sentByTarget) return 'replied';
+  if (!followsTarget && sentByTarget) return 'incoming';
   if (followsTarget) return 'following';
   return 'stranger';
 }
@@ -59,23 +72,43 @@ function getHome() {
   const user = getCurrentUser(db);
   const memberTripIds = (db.trip_members || []).filter(item => item.userId === user._id).map(item => item.tripId);
   const currentTrip = db.trips.find(item => memberTripIds.includes(item._id) && item.status !== 'done') || null;
+  const highPriorityNotification = (db.notifications || []).find(item => !item.read && ['high', 'urgent'].includes(item.priority)) || null;
+  const visibleUserIds = new Set((db.map_layers || []).flatMap(item => [item.userId, item.leaderId]).filter(Boolean));
+  const mapConversationUnread = (db.conversations || [])
+    .filter(item => item.type === 'team' || item.type === 'private' && relationFor(db, user._id, item.targetId) !== 'mutual' && visibleUserIds.has(item.targetId))
+    .reduce((sum, item) => sum + Number(item.unread || 0), 0);
+  const mapLayers = (db.map_layers || []).map(item => {
+    const targetId = item.userId || item.leaderId;
+    if (!targetId) return { ...item };
+    const conversation = (db.conversations || []).find(row => row.type === 'private' && row.targetId === targetId);
+    const relation = relationFor(db, user._id, targetId);
+    return {
+      ...item,
+      unread: relation === 'mutual' ? 0 : Number(conversation && conversation.unread || 0),
+      preview: relation === 'mutual' ? '' : conversation && conversation.lastMessage || ''
+    };
+  });
   return ok({
     user,
     currentTrip,
     trips: db.trips.slice().sort((a, b) => Number(b.matchRate || 0) - Number(a.matchRate || 0)).slice(0, 4),
     groupbuys: db.groupbuys.slice(0, 3),
     conversations: db.conversations || [],
-    mapLayers: db.map_layers || [],
+    mapLayers,
     poiChats: db.poi_chats || [],
     settings: (db.user_settings || {})[user._id] || {},
     weather: { altitude: 83, text: '晴', temperature: 22 },
-    energyReminder: { message: '距你约 12.6km 有富阳服务区充电站' },
+    energyReminder: currentTrip && currentTrip.ownerId === user._id ? { message: '距你约 12.6km 有富阳服务区充电站' } : null,
+    highPriorityNotification,
     stats: {
       tripCount: db.trips.length,
       joinedTripCount: memberTripIds.length,
       orderCount: db.orders.filter(item => item.userId === user._id).length,
       groupbuyCount: db.groupbuys.length,
       unreadCount: (db.conversations || []).reduce((sum, item) => sum + Number(item.unread || 0), 0)
+        + (db.notifications || []).filter(item => !item.read).length,
+      mapUnreadCount: mapConversationUnread
+        + (db.notifications || []).filter(item => !item.read && (item.priority === 'high' || ['emergency', 'safety_report'].includes(item.type))).length
     }
   });
 }
@@ -88,6 +121,7 @@ function listTrips(sort = 'match') {
   const requests = db.trip_requests || [];
   const rows = db.trips.map(item => ({
     ...item,
+    owner: getUserById(db, item.ownerId) || {},
     joined: memberTripIds.includes(item._id),
     owned: item.ownerId === user._id,
     requestStatus: (requests.find(request => request.tripId === item._id && request.userId === user._id) || {}).status || 'none'
@@ -127,6 +161,10 @@ function createTrip(payload) {
   if (useCloud) return callCloud('trip', { action: 'create', payload });
   const db = store.getStore();
   const user = getCurrentUser(db);
+  const route = Array.isArray(payload.route) && payload.route.length >= 2 ? payload.route : [
+    { latitude: Number(payload.startPoint && payload.startPoint.lat || 30.2741), longitude: Number(payload.startPoint && payload.startPoint.lng || 120.1551) },
+    { latitude: Number(payload.endPoint && payload.endPoint.lat || 29.6097), longitude: Number(payload.endPoint && payload.endPoint.lng || 119.0419) }
+  ];
   const trip = {
     _id: store.id('trip'),
     ownerId: user._id,
@@ -149,16 +187,13 @@ function createTrip(payload) {
     discoverable: payload.discoverable !== false,
     status: 'open',
     stage: 'forming',
-    matchRate: 100,
+    matchRate: null,
     remainingKm: Number(payload.dailyKm || 200),
     sharedLocation: true,
     note: payload.note || '',
-    route: [
-      { latitude: 30.2741, longitude: 120.1551 },
-      { latitude: 29.6097, longitude: 119.0419 }
-    ],
+    route,
     teammates: [
-      { userId: user._id, nickname: user.nickname, latitude: 30.2741, longitude: 120.1551 }
+      { userId: user._id, nickname: user.nickname, latitude: route[0].latitude, longitude: route[0].longitude, isLeader: true }
     ],
     createdAt: store.currentTime()
   };
@@ -200,7 +235,7 @@ function updateTrip(tripId, payload) {
   const trip = db.trips.find(item => item._id === tripId);
   if (!trip) return fail('行程不存在');
   if (trip.ownerId !== user._id) return fail('只有队长可以编辑行程');
-  for (const key of ['title', 'teamName', 'from', 'to', 'departAt', 'note', 'depth', 'privacy']) {
+  for (const key of ['title', 'teamName', 'from', 'to', 'departAt', 'note', 'depth', 'privacy', 'discoverable']) {
     if (payload[key] !== undefined) trip[key] = payload[key];
   }
   for (const key of ['days', 'dailyKm', 'seatTotal', 'priceShare']) {
@@ -209,6 +244,10 @@ function updateTrip(tripId, payload) {
   if (payload.waypoints) trip.waypoints = payload.waypoints;
   if (payload.plans) trip.plans = payload.plans;
   if (payload.equipment) trip.equipment = payload.equipment;
+  if (Array.isArray(payload.route) && payload.route.length >= 2) {
+    trip.route = payload.route;
+    if (trip.teammates && trip.teammates[0]) Object.assign(trip.teammates[0], payload.route[0]);
+  }
   trip.updatedAt = store.currentTime();
   store.saveStore(db);
   return ok(trip);
@@ -362,7 +401,10 @@ function listMessages(tripId) {
 
 function listConversations(type) {
   const db = store.getStore();
-  const items = (db.conversations || []).slice();
+  const current = getCurrentUser(db);
+  const items = (db.conversations || []).map(item => item.type === 'private'
+    ? { ...item, relation: relationFor(db, current._id, item.targetId) }
+    : { ...item });
   if (!type || type === 'all') for (const item of db.notifications || []) items.push({
     _id: `notification:${item._id}`, type: 'system', notificationType: item.type, targetId: item._id, title: item.title,
     lastMessage: item.content, time: item.createdAt, unread: item.read ? 0 : 1,
@@ -403,6 +445,7 @@ function sendMessage(tripId, content, type = 'text', options = {}) {
     content: displayContent,
     mediaUrl: type === 'voice' ? text : '',
     duration: Number(options.duration || 0),
+    metadata: options,
     createdAt: store.currentTime()
   };
   db.messages.push(message);
@@ -418,11 +461,34 @@ function sendMessage(tripId, content, type = 'text', options = {}) {
 }
 
 function shareLocation(tripId) {
-  return sendMessage(tripId, '已共享位置：西湖文化广场东门', 'location');
+  return sendMessage(tripId, '已共享位置：西湖文化广场东门', 'location', {
+    latitude: 30.2741, longitude: 120.1551, name: '西湖文化广场东门', address: '杭州市拱墅区'
+  });
 }
 
 function sharePresence() {
   return ok({ status: 'visible', expiresInMinutes: 60 });
+}
+
+function reportLiveLocation(tripId, location) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  if (tripId) {
+    const trip = db.trips.find(item => item._id === tripId);
+    if (!trip) return fail('行程不存在');
+    trip.teammates = trip.teammates || [];
+    let teammate = trip.teammates.find(item => item.userId === user._id);
+    if (!teammate) {
+      teammate = { userId: user._id, nickname: user.nickname, isLeader: trip.ownerId === user._id };
+      trip.teammates.push(teammate);
+    }
+    Object.assign(teammate, {
+      latitude: Number(location.latitude), longitude: Number(location.longitude),
+      speed: Number(location.speed || 0), altitude: Number(location.altitude || 0), reportedAt: store.currentTime()
+    });
+  }
+  store.saveStore(db);
+  return ok({ reported: true });
 }
 
 function getPrivateChat(userId) {
@@ -431,14 +497,16 @@ function getPrivateChat(userId) {
   const target = getUserById(db, userId);
   if (!target) return fail('用户不存在');
   const blocked = (db.blocked_users || []).some(item => item.userId === current._id && item.targetId === userId);
-  const relation = relationFor(db, current._id, userId);
+  const blockedByTarget = (db.blocked_users || []).some(item => item.userId === userId && item.targetId === current._id);
+  const relation = blocked || blockedByTarget ? 'blocked' : relationFor(db, current._id, userId);
   const outgoingCount = (db.private_messages || []).filter(item => item.fromUserId === current._id && item.toUserId === userId).length;
-  const canSend = !blocked && (relation === 'mutual' || relation === 'teammate' || (relation === 'following' && outgoingCount < 3));
+  const canSend = !blocked && !blockedByTarget && (['mutual', 'teammate', 'replied', 'incoming'].includes(relation) || relation === 'following' && outgoingCount < 3);
   const messages = (db.private_messages || []).filter(item =>
     (item.fromUserId === current._id && item.toUserId === userId) ||
     (item.fromUserId === userId && item.toUserId === current._id)
   );
-  return ok({ target, currentUserId: current._id, relation, blocked, outgoingCount, remaining: relation === 'following' ? Math.max(0, 3 - outgoingCount) : null, canSend, messages });
+  const remaining = relation === 'following' ? Math.max(0, 3 - outgoingCount) : relation === 'incoming' ? 1 : relation === 'blocked' ? 0 : null;
+  return ok({ target, currentUserId: current._id, relation, blocked, blockedByTarget, outgoingCount, remaining, canSend, messages });
 }
 
 function sendPrivateMessage(userId, content) {
@@ -449,7 +517,8 @@ function sendPrivateMessage(userId, content) {
   const target = getUserById(db, userId);
   if (!target) return fail('用户不存在');
   const blocked = (db.blocked_users || []).some(item => item.userId === current._id && item.targetId === userId);
-  if (blocked) return fail('已将该用户加入黑名单');
+  const blockedByTarget = (db.blocked_users || []).some(item => item.userId === userId && item.targetId === current._id);
+  if (blocked || blockedByTarget) return fail('当前无法向该用户发送私信');
   const relation = relationFor(db, current._id, userId);
   const outgoingCount = (db.private_messages || []).filter(item => item.fromUserId === current._id && item.toUserId === userId).length;
   if (relation === 'stranger') return fail('关注后才可以发消息');
@@ -473,6 +542,7 @@ function sendPrivateMessage(userId, content) {
   conversation.lastMessage = text;
   conversation.time = '刚刚';
   conversation.meta = relation === 'mutual' ? '已互关' : relation === 'teammate' ? '同队成员' : '已关注';
+  conversation.relation = relationFor(db, current._id, userId);
   conversation.unread = 0;
   store.saveStore(db);
   return ok(message);
@@ -483,7 +553,10 @@ function getPoiChat(poiChatId) {
   const room = (db.poi_chats || []).find(item => item._id === poiChatId);
   if (!room) return fail('地点聊天室不存在');
   const messages = (db.poi_messages || []).filter(item => item.poiChatId === poiChatId);
-  return ok({ room, messages });
+  const current = getCurrentUser(db);
+  const retained = messages.some(item => item.userId === current._id)
+    || (db.conversations || []).some(item => item.type === 'poi' && item.targetId === poiChatId);
+  return ok({ room: { ...room, participated: retained }, messages });
 }
 
 function createPoiChat(payload) {
@@ -493,6 +566,9 @@ function createPoiChat(payload) {
     _id: store.id('poi'),
     name: payload.name,
     location: payload.location,
+    locationName: payload.locationName || payload.location,
+    latitude: Number(payload.lat),
+    longitude: Number(payload.lng),
     online: 1,
     status: 'active',
     lastMessage: '话题已创建，来分享路况和补给信息吧',
@@ -526,17 +602,29 @@ function followPoiChat(poiChatId) {
   return ok(room);
 }
 
-function sendPoiMessage(poiChatId, content) {
+function touchPoiPresence(poiChatId) {
+  const db = store.getStore();
+  const room = (db.poi_chats || []).find(item => item._id === poiChatId);
+  return room ? ok({ onlineCount: Number(room.online || 1), expiresIn: 90 }) : fail('地点聊天室不存在');
+}
+
+function sendPoiMessage(poiChatId, content, type = 'text', metadata = {}) {
   const text = `${content || ''}`.trim();
   if (!text) return fail('消息不能为空');
   const db = store.getStore();
   const user = getCurrentUser(db);
   const room = (db.poi_chats || []).find(item => item._id === poiChatId);
   if (!room) return fail('地点聊天室不存在');
-  if (room.status === 'archived') return fail('历史话题只可浏览，不能发言');
-  const message = { _id: store.id('poim'), poiChatId, userId: user._id, nickname: user.nickname, content: text, createdAt: store.currentTime() };
+  const retained = (db.poi_messages || []).some(item => item.poiChatId === poiChatId && item.userId === user._id)
+    || (db.conversations || []).some(item => item.type === 'poi' && item.targetId === poiChatId);
+  if (room.status === 'archived' && retained) return fail('历史话题只可浏览；新的到访者发言后可重新激活');
+  if (room.status === 'archived') room.status = 'active';
+  const message = {
+    _id: store.id('poim'), poiChatId, userId: user._id, nickname: user.nickname,
+    type, content: text, mediaUrl: type === 'image' ? text : '', metadata, createdAt: store.currentTime()
+  };
   db.poi_messages.push(message);
-  room.lastMessage = text;
+  room.lastMessage = type === 'image' ? '[图片]' : text;
   room.status = 'active';
   room.followed = true;
   let conversation = (db.conversations || []).find(item => item.type === 'poi' && item.targetId === poiChatId);
@@ -545,7 +633,7 @@ function sendPoiMessage(poiChatId, content) {
     db.conversations.unshift(conversation);
   }
   conversation.title = `${room.name} · ${room.online}人在聊`;
-  conversation.lastMessage = text;
+  conversation.lastMessage = type === 'image' ? '[图片]' : text;
   conversation.time = '刚刚';
   conversation.meta = '参与过的话题';
   conversation.unread = 0;
@@ -553,10 +641,31 @@ function sendPoiMessage(poiChatId, content) {
   return ok(message);
 }
 
-function listGroupbuys() {
+function listGroupbuys(options = {}) {
   if (useCloud) return callCloud('groupbuy', { action: 'list' });
   const db = store.getStore();
-  return ok(db.groupbuys.map(groupbuy => ({ ...groupbuy, currentPrice: getTierPrice(groupbuy, groupbuy.joined) })));
+  const user = getCurrentUser(db);
+  const memberTripIds = (db.trip_members || []).filter(item => item.userId === user._id).map(item => item.tripId);
+  const currentTrip = db.trips.find(item => memberTripIds.includes(item._id) && item.status !== 'done');
+  const rows = db.groupbuys.map(groupbuy => {
+    const routeDistances = currentTrip && currentTrip.route
+      ? currentTrip.route.map(point => localDistance(point, { latitude: groupbuy.latitude, longitude: groupbuy.longitude }))
+      : [];
+    return {
+      ...groupbuy,
+      currentPrice: getTierPrice(groupbuy, groupbuy.joined),
+      routeDistanceKm: routeDistances.length ? Number((Math.min(...routeDistances) / 1000).toFixed(1)) : null
+    };
+  });
+  const visible = rows.filter(item => options.mode === 'route'
+    ? item.routeDistanceKm == null || item.routeDistanceKm <= 30
+    : options.mode === 'nearby' ? item.distanceKm == null || item.distanceKm <= 50 : true);
+  visible.sort((first, second) => options.mode === 'hot'
+    ? Number(second.joined || 0) - Number(first.joined || 0)
+    : options.mode === 'route'
+      ? Number(first.routeDistanceKm == null ? Infinity : first.routeDistanceKm) - Number(second.routeDistanceKm == null ? Infinity : second.routeDistanceKm)
+      : Number(first.distanceKm == null ? Infinity : first.distanceKm) - Number(second.distanceKm == null ? Infinity : second.distanceKm));
+  return ok(visible);
 }
 
 function getTierPrice(groupbuy, people) {
@@ -576,7 +685,14 @@ function getMerchant(merchantId) {
   const db = store.getStore();
   const merchant = (db.merchants || []).find(item => item._id === merchantId);
   if (!merchant) return fail('商家不存在');
-  return ok({ ...merchant, groupbuys: (db.groupbuys || []).filter(item => item.merchantId === merchantId) });
+  const groupbuys = (db.groupbuys || []).filter(item => item.merchantId === merchantId);
+  const locatedProduct = groupbuys.find(item => Number.isFinite(Number(item.latitude)) && Number.isFinite(Number(item.longitude)));
+  return ok({
+    ...merchant,
+    lat: merchant.lat == null && locatedProduct ? Number(locatedProduct.latitude) : merchant.lat,
+    lng: merchant.lng == null && locatedProduct ? Number(locatedProduct.longitude) : merchant.lng,
+    groupbuys
+  });
 }
 
 function createGroupbuySession(productId, options = {}) {
@@ -659,7 +775,18 @@ function getOrder(orderId) {
   const db = store.getStore();
   const user = getCurrentUser(db);
   const order = db.orders.find(item => item._id === orderId && item.userId === user._id);
-  return order ? ok(order) : fail('订单不存在');
+  if (!order) return fail('订单不存在');
+  const groupbuy = (db.groupbuys || []).find(item => item._id === order.groupbuyId);
+  return ok({
+    ...order,
+    merchantLatitude: groupbuy && Number(groupbuy.latitude),
+    merchantLongitude: groupbuy && Number(groupbuy.longitude),
+    merchantAddress: groupbuy && groupbuy.address || ''
+  });
+}
+
+function retryOrderPayment(orderId) {
+  return getOrder(orderId);
 }
 
 function requestRefund(orderId, reason) {
@@ -704,7 +831,7 @@ function getMine() {
 function updateProfile(payload) {
   const db = store.getStore();
   const user = getCurrentUser(db);
-  for (const key of ['nickname', 'phone', 'vehicleModel', 'vehicleNo', 'bio']) {
+  for (const key of ['nickname', 'avatar', 'phone', 'vehicleModel', 'vehicleNo', 'bio', 'discoverable']) {
     if (payload[key] !== undefined) user[key] = payload[key];
   }
   store.saveStore(db);
@@ -809,6 +936,7 @@ function listInvites() {
   return ok({
     inviteCode: user.inviteCode || 'TD0000',
     sharePath: `/pages/login/login?inviter=${user._id}`,
+    qrCode: '/images/invite-demo.png',
     records,
     rewards: [
       { target: 1, title: '邀请首位好友', reward: '10同路值', reached: records.length >= 1 },
@@ -882,7 +1010,8 @@ function submitTicket(payload) {
   const user = getCurrentUser(db);
   const ticket = {
     _id: store.id('ticket'), userId: user._id, userName: user.nickname, category: payload.category || '其他问题',
-    title: payload.title, status: 'open', createdAt: store.currentTime(),
+    title: payload.title, status: 'open', targetType: payload.targetType || '', targetId: payload.targetId || '',
+    messageId: payload.messageId || '', createdAt: store.currentTime(),
     messages: [{ sender: 'user', content: payload.content || payload.title, createdAt: store.currentTime() }]
   };
   db.service_tickets = db.service_tickets || [];
@@ -895,6 +1024,36 @@ function listTickets() {
   const db = store.getStore();
   const user = getCurrentUser(db);
   return ok((db.service_tickets || []).filter(item => item.userId === user._id));
+}
+
+function getTicket(ticketId) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const ticket = (db.service_tickets || []).find(item => item._id === ticketId && item.userId === user._id);
+  return ticket ? ok(ticket) : fail('工单不存在');
+}
+
+function replyTicket(ticketId, content) {
+  const db = store.getStore();
+  const user = getCurrentUser(db);
+  const ticket = (db.service_tickets || []).find(item => item._id === ticketId && item.userId === user._id);
+  if (!ticket) return fail('工单不存在');
+  if (!String(content || '').trim()) return fail('回复内容不能为空');
+  ticket.messages = ticket.messages || [];
+  const message = { sender: 'user', senderType: 'user', content: String(content).trim(), createdAt: store.currentTime() };
+  ticket.messages.push(message);
+  ticket.status = 'open';
+  ticket.updatedAt = store.currentTime();
+  store.saveStore(db);
+  return ok(message);
+}
+
+function reportPoiTopic(topicId, reason, messageId = '') {
+  return submitTicket({ category: '地点内容举报', title: '举报地点聊天室违规内容', content: reason, targetType: 'poi_topic', targetId: topicId, messageId });
+}
+
+function reportUser(userId, reason) {
+  return submitTicket({ category: '隐私投诉', title: '跨车队私信骚扰投诉', content: reason, targetType: 'user', targetId: userId });
 }
 
 function getSettings() {
@@ -967,12 +1126,12 @@ function resetDemo() {
 
 const localApi = {
   login, getHome, listTrips, getTrip, createTrip, updateTrip, applyTrip, joinTrip, approveTripRequest, leaveTrip, reviewTripLeave, removeTripMember, updateTripState, endTrip,
-  listMessages, listConversations, markConversationRead, sendMessage, shareLocation, sharePresence, getPrivateChat, sendPrivateMessage,
-  getPoiChat, createPoiChat, followPoiChat, sendPoiMessage,
-  listGroupbuys, getGroupbuy, getMerchant, createGroupbuySession, createOrder, listOrders, getOrder, requestRefund,
+  listMessages, listConversations, markConversationRead, sendMessage, shareLocation, sharePresence, reportLiveLocation, getPrivateChat, sendPrivateMessage,
+  getPoiChat, touchPoiPresence, createPoiChat, followPoiChat, sendPoiMessage, reportPoiTopic,
+  listGroupbuys, getGroupbuy, getMerchant, createGroupbuySession, createOrder, listOrders, getOrder, retryOrderPayment, requestRefund,
   getMine, updateProfile, getUserProfile, getBadgeWall, toggleFollow, setBlocked, listSocial,
   getCertification, submitCertification, listCoupons, listInvites, bindInviterByPhone, createNextTrip, matchNextTrip, publishNextTrip,
-  submitTicket, listTickets, getSettings, updateSettings, recordEmergency, reportSafetyEvent, getAdminSnapshot, resetDemo
+  submitTicket, reportUser, listTickets, getTicket, replyTicket, getSettings, updateSettings, recordEmergency, reportSafetyEvent, getAdminSnapshot, resetDemo
 };
 
 localApi.sendSmsCode = () => ok({ delivery: 'offline-demo', devCode: '5200' });
@@ -980,7 +1139,9 @@ localApi.loginWithPhone = (phone, code, profile = {}) => code === '5200'
   ? login({ ...profile, phone })
   : fail('离线演示验证码为 5200');
 localApi.loginWechat = profile => login(profile);
+localApi.bindWechat = () => ok(getCurrentUser(store.getStore()));
 localApi.startCertification = payload => ok({ liveness: { demo: true, url: 'demo://liveness' }, ocr: { plate: payload.plate, vehicleModel: payload.vehicleModel } });
+localApi.checkCertificationLiveness = () => ok({ passed: true, liveness: { demo: true, passed: true } });
 localApi.planRoute = payload => ok({ start: payload.startPoint, end: payload.endPoint, route: payload.route || [] });
 localApi.subscribeRealtime = () => () => {};
 

@@ -1,3 +1,6 @@
+const crypto = require('crypto');
+const { assert } = require('../lib/errors');
+
 async function merchantRoutes(app) {
   const merchant = app.services.merchant;
   const commerce = app.services.commerce;
@@ -36,6 +39,16 @@ async function merchantRoutes(app) {
   app.patch('/api/merchant/coupons/:couponId', { preHandler: app.requireMerchant }, async (request, reply) => reply.ok(await merchant.updateCoupon(request.actor, request.params.couponId, request.body || {})));
   app.put('/api/merchant/promotion/settings', { preHandler: app.requireMerchant }, async (request, reply) => reply.ok(await merchant.updatePromotionSettings(request.actor, request.body || {})));
   app.get('/api/merchant/promotion', { preHandler: app.requireMerchant }, async (request, reply) => reply.ok(await merchant.promotion(request.actor)));
+  app.post('/api/merchant/promotion/share', { preHandler: app.requireMerchant }, async (request, reply) => {
+    const shop = await merchant.resolveMerchant(request.actor);
+    assert(shop.status === 'approved' && shop.owner_user_id, 409, 'MERCHANT_PROMOTION_UNAVAILABLE', '商家审核通过并关联用户后才能生成推广卡');
+    const sourceRef = crypto.randomBytes(10).toString('hex');
+    const token = app.jwt.sign({
+      kind: 'invite', inviterId: shop.owner_user_id, source: 'merchant', sourceRef, merchantId: shop.id
+    }, { expiresIn: '30d' });
+    const share = await app.services.users.createInviteShare(shop.owner_user_id, token, sourceRef, 'merchant');
+    return reply.ok({ ...share, merchantId: shop.id, merchantName: shop.name });
+  });
   app.put('/api/merchant/rescue', { preHandler: app.requireMerchant }, async (request, reply) => reply.ok(await merchant.updateRescue(request.actor, request.body || {})));
   app.get('/api/merchant/assessment', { preHandler: app.requireMerchant }, async (request, reply) => reply.ok(await merchant.assessment(request.actor)));
   app.get('/api/merchant/notifications', { preHandler: app.requireMerchant }, async (request, reply) => reply.ok(await merchant.notifications(request.actor)));

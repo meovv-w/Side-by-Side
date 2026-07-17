@@ -27,6 +27,8 @@ async function userRoutes(app) {
 
   app.get('/api/certifications/me', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await users.certification(request.actor.sub)));
   app.post('/api/certifications/session', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await users.startCertification(request.actor.sub, request.body.licensePhoto)));
+  app.post('/api/certifications/liveness/callback', async (request, reply) => reply.ok(await users.applyLivenessCallback(request.query.token, request.body || {})));
+  app.get('/api/certifications/session/status', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await users.certificationSessionStatus(request.actor.sub)));
   app.post('/api/certifications', { preHandler: app.requireUser }, async (request, reply) => reply.code(201).ok(await users.submitCertification(request.actor.sub, request.body || {})));
 
   app.post('/api/invites/share', { preHandler: app.requireUser }, async (request, reply) => {
@@ -37,8 +39,14 @@ async function userRoutes(app) {
   });
   app.get('/api/invites/resolve', async (request, reply) => {
     const link = await app.repository.findOne('invite_links', { scene: request.query.scene });
-    if (!link || timestamp(link.expires_at) <= Date.now()) return reply.code(404).send({ ok: false, error: { code: 'INVITE_SCENE_INVALID', message: '邀请二维码无效或已过期' } });
-    const token = app.jwt.sign({ kind: 'invite', inviterId: link.inviter_id, source: link.source, sourceRef: link.scene }, { expiresIn: '30d' });
+    if (!link || timestamp(link.expires_at) <= timestamp(app.services.common.now())) return reply.code(404).send({ ok: false, error: { code: 'INVITE_SCENE_INVALID', message: '邀请二维码无效或已过期' } });
+    const merchant = link.source === 'merchant'
+      ? await app.repository.findOne('merchants', { owner_user_id: link.inviter_id, status: 'approved' })
+      : null;
+    const token = app.jwt.sign({
+      kind: 'invite', inviterId: link.inviter_id, source: link.source, sourceRef: link.scene,
+      merchantId: merchant && merchant.id || null
+    }, { expiresIn: '30d' });
     return reply.ok({ token });
   });
   app.get('/api/invites/me', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await users.inviteSummary(request.actor.sub)));
@@ -57,8 +65,7 @@ async function userRoutes(app) {
   app.get('/api/support/tickets', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await users.tickets(request.actor.sub)));
   app.get('/api/support/tickets/:ticketId', { preHandler: app.requireUser }, async (request, reply) => reply.ok(await users.ticketDetail(request.actor.sub, request.params.ticketId)));
   app.post('/api/support/tickets/:ticketId/messages', { preHandler: app.requireUser }, async (request, reply) => {
-    await users.ticketDetail(request.actor.sub, request.params.ticketId);
-    return reply.code(201).ok(await users.addTicketMessage(request.params.ticketId, 'user', request.actor.sub, request.body.content, request.body.mediaUrls || []));
+    return reply.code(201).ok(await users.replyTicket(request.actor.sub, request.params.ticketId, request.body.content, request.body.mediaUrls || []));
   });
 
   app.post('/api/emergencies', { preHandler: app.requireUser }, async (request, reply) => reply.code(201).ok(await users.emergency(request.actor.sub, request.body || {})));

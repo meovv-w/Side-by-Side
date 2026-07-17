@@ -1,25 +1,38 @@
 const crypto = require('crypto');
+const QRCode = require('qrcode');
 const { AppError, assert } = require('../lib/errors');
 const { id, sixDigitCode } = require('../lib/ids');
-const { distanceMeters } = require('../lib/geo');
-const { addTime, isPast, timestamp } = require('../lib/time');
+const { distanceMeters, distanceFromRoute, validCoordinate } = require('../lib/geo');
+const { addTime, isPast, timestamp, dateKey } = require('../lib/time');
 const { publicUser } = require('./users');
 const { publicMerchant } = require('./merchant');
 
 function createCommerceService({ repository, providers, common, clock = () => Date.now() }) {
   async function listProducts(query = {}) {
     const center = query.lng != null ? { lng: Number(query.lng), lat: Number(query.lat) } : null;
+    const routeTrip = query.tripId ? await repository.get('trips', query.tripId) : null;
+    const radius = Math.min(Math.max(Number(query.radius || 50000), 1000), 100000);
+    const routeRadius = Math.min(Math.max(Number(query.routeRadius || 30000), 1000), 100000);
     const rows = await repository.find('products', { status: 'on' });
     const items = [];
     for (const product of rows) {
       const merchant = await repository.get('merchants', product.merchant_id);
       if (!merchant || merchant.status !== 'approved' || !merchant.business_open) continue;
       const distance = center ? distanceMeters(center, product) : null;
-      const sessions = await repository.find('groupbuy_sessions', { product_id: product.id, status: 'forming' }, { orderBy: ['created_at', 'desc'] });
-      items.push({ ...product, merchant: publicMerchant(merchant), sessions, distanceMeters: Number.isFinite(distance) ? Math.round(distance) : null });
+      const routeDistance = routeTrip && Array.isArray(routeTrip.route) ? distanceFromRoute(product, routeTrip.route) : null;
+      if (query.sort === 'nearby' && Number.isFinite(distance) && distance > radius) continue;
+      if (query.sort === 'route' && routeTrip && (!Number.isFinite(routeDistance) || routeDistance > routeRadius)) continue;
+      const sessions = (await repository.find('groupbuy_sessions', { product_id: product.id, status: 'forming' }, { orderBy: ['created_at', 'desc'] }))
+        .map(session => ({ ...session, joinPrice: tierPrice(product, Number(session.joined_people) + 1) }));
+      items.push({
+        ...product, merchant: publicMerchant(merchant), sessions,
+        distanceMeters: Number.isFinite(distance) ? Math.round(distance) : null,
+        routeDistanceMeters: Number.isFinite(routeDistance) ? Math.round(routeDistance) : null
+      });
     }
     items.sort((a, b) => {
       if (query.sort === 'hot') return b.sessions.reduce((sum, item) => sum + Number(item.joined_people), 0) - a.sessions.reduce((sum, item) => sum + Number(item.joined_people), 0);
+      if (query.sort === 'route') return Number(a.routeDistanceMeters == null ? Infinity : a.routeDistanceMeters) - Number(b.routeDistanceMeters == null ? Infinity : b.routeDistanceMeters);
       if (center) return Number(a.distanceMeters || Infinity) - Number(b.distanceMeters || Infinity);
       return timestamp(b.created_at) - timestamp(a.created_at);
     });
@@ -29,7 +42,8 @@ function createCommerceService({ repository, providers, common, clock = () => Da
   async function productDetail(productId) {
     const product = await getProduct(productId);
     const merchant = await repository.get('merchants', product.merchant_id);
-    const sessions = await repository.find('groupbuy_sessions', { product_id: productId, status: ['forming', 'success'] }, { orderBy: ['created_at', 'desc'] });
+    const sessions = (await repository.find('groupbuy_sessions', { product_id: productId, status: ['forming', 'success'] }, { orderBy: ['created_at', 'desc'] }))
+      .map(session => ({ ...session, joinPrice: tierPrice(product, Number(session.joined_people) + 1) }));
     return { product, merchant: publicMerchant(merchant), sessions };
   }
 
@@ -39,7 +53,8 @@ function createCommerceService({ repository, providers, common, clock = () => Da
     const products = [];
     for (const product of await repository.find('products', { merchant_id: merchant.id, status: 'on' }, { orderBy: ['created_at', 'desc'] })) products.push({
       ...product,
-      sessions: await repository.find('groupbuy_sessions', { product_id: product.id, status: 'forming' }, { orderBy: ['created_at', 'desc'] })
+      sessions: (await repository.find('groupbuy_sessions', { product_id: product.id, status: 'forming' }, { orderBy: ['created_at', 'desc'] }))
+        .map(session => ({ ...session, joinPrice: tierPrice(product, Number(session.joined_people) + 1) }))
     });
     return { merchant: publicMerchant(merchant), products };
   }
@@ -49,7 +64,7 @@ function createCommerceService({ repository, providers, common, clock = () => Da
     const product = await getProduct(productId);
     assert(product.status === 'on' && Number(product.stock) > Number(product.sold) + Number(product.reserved || 0), 409, 'PRODUCT_UNAVAILABLE', '商品已下架或售罄');
     const target = Number(payload.targetPeople || firstTarget(product));
-    assert(target >= 1 && target <= Number(product.max_group_size), 400, 'GROUP_TARGET_INVALID', '目标人数超出商品允许范围');
+    assert(Number.isInteger(target) && target >= 1 && target <= Number(product.max_group_size), 400, 'GROUP_TARGET_INVALID', '目标人数必须为商品允许范围内的整数');
     if (payload.tripId) {
       const member = await repository.findOne('trip_members', { trip_id: payload.tripId, user_id: userId, status: 'active' });
       assert(member, 403, 'TRIP_MEMBER_REQUIRED', '只有车队成员可以在该群发起拼团');
@@ -70,6 +85,7 @@ function createCommerceService({ repository, providers, common, clock = () => Da
     for (const member of members) participants.push({ ...member, user: publicUser(await common.getUser(member.user_id), false) });
     return {
       session, product, merchant: publicMerchant(merchant), participants,
+      joinPrice: tierPrice(product, Number(session.joined_people) + 1),
       remainingPeople: Math.max(0, Number(session.target_people) - Number(session.joined_people)),
       remainingSeconds: Math.max(0, Math.floor((timestamp(session.expires_at) - clock()) / 1000)),
       nextTier: nextTier(product, Number(session.joined_people))
@@ -85,7 +101,8 @@ function createCommerceService({ repository, providers, common, clock = () => Da
     assert(!(await repository.findOne('groupbuy_members', { session_id: sessionId, user_id: userId, status: 'paid' })), 409, 'ALREADY_JOINED_GROUPBUY', '你已参加该拼团');
     const pending = await repository.findOne('orders', { session_id: sessionId, user_id: userId, status: 'pending_payment' });
     if (pending && !isPast(pending.expires_at, clock())) return { order: pending, payment: await paymentForOrder(user, pending, product) };
-    const quantity = Math.max(1, Math.min(Number(payload.quantity || 1), Number(product.max_quantity)));
+    const quantity = Number(payload.quantity == null ? 1 : payload.quantity);
+    assert(Number.isInteger(quantity) && quantity >= 1 && quantity <= Number(product.max_quantity), 400, 'ORDER_QUANTITY_INVALID', '购买数量必须为允许范围内的整数');
     assert(Number(product.sold) + Number(product.reserved || 0) + quantity <= Number(product.stock), 409, 'PRODUCT_STOCK_INSUFFICIENT', '商品库存不足');
     const unitPrice = tierPrice(product, Number(session.joined_people) + 1);
     const originAmount = money(unitPrice * quantity);
@@ -94,6 +111,9 @@ function createCommerceService({ repository, providers, common, clock = () => Da
     const paidAmount = Math.max(0.01, money(originAmount - discountAmount));
     const expiresAt = new Date(Math.min(timestamp(session.expires_at), clock() + 15 * 60000));
     const order = await repository.transaction(async tx => {
+      const sessionOrders = await tx.find('orders', { session_id: session.id, status: ['pending_payment', 'paid', 'refund_pending', 'verified'] });
+      const sessionQuantity = sessionOrders.reduce((sum, item) => sum + Number(item.quantity || 0), 0);
+      assert(sessionQuantity + quantity <= Number(product.max_quantity), 409, 'GROUPBUY_QUANTITY_LIMIT', '该拼团已达到最大可拼数量');
       assert(await tx.reserveInventory(product.id, quantity), 409, 'PRODUCT_STOCK_INSUFFICIENT', '商品库存不足');
       const row = await tx.insert('orders', {
         id: id('order'), order_no: orderNumber(clock()), user_id: userId, merchant_id: product.merchant_id,
@@ -179,7 +199,13 @@ function createCommerceService({ repository, providers, common, clock = () => Da
   }
 
   async function orderDetail(userId, orderId) {
-    return enrichOrder(await getUserOrder(userId, orderId));
+    const detail = await enrichOrder(await getUserOrder(userId, orderId));
+    return {
+      ...detail,
+      verify_qr_code: detail.verify_code && detail.status === 'paid'
+        ? await QRCode.toDataURL(`TDORDER:${detail.verify_code}`, { width: 360, margin: 1 })
+        : ''
+    };
   }
 
   async function requestRefund(userId, orderId, reason) {
@@ -212,6 +238,15 @@ function createCommerceService({ repository, providers, common, clock = () => Da
     return issueRefund(await repository.get('refunds', refund.id), order);
   }
 
+  async function retryRefund(refundId) {
+    const refund = await repository.get('refunds', refundId);
+    assert(refund && ['failed', 'processing'].includes(refund.status), 404, 'REFUND_NOT_RETRYABLE', '该退款单当前不能重试');
+    const order = await repository.get('orders', refund.order_id);
+    assert(order && order.payment_transaction_id, 409, 'REFUND_PAYMENT_REFERENCE_REQUIRED', '退款单缺少原支付流水');
+    await repository.update('refunds', refund.id, { status: 'processing', review_reason: refund.review_reason || '运营重试退款' });
+    return issueRefund(await repository.get('refunds', refund.id), order);
+  }
+
   async function applyRefundNotification(resource, providerEventId) {
     assert(resource && resource.out_refund_no, 400, 'REFUND_NOTIFICATION_INVALID', '退款回调缺少退款单号');
     const refund = await repository.get('refunds', resource.out_refund_no.replace(/^RF_/, '')) || await repository.findOne('refunds', { provider_refund_id: resource.refund_id });
@@ -226,6 +261,7 @@ function createCommerceService({ repository, providers, common, clock = () => Da
   }
 
   async function verifyOrder(admin, code, payload = {}) {
+    validateOptionalLocation(payload);
     const order = await repository.findOne('orders', { verify_code: String(code || '') });
     assert(order && order.merchant_id === admin.merchant_id, 404, 'VERIFY_CODE_NOT_FOUND', '未找到该核销码对应的本店订单');
     assert(order.status === 'paid', 409, 'ORDER_NOT_VERIFIABLE', order.status === 'verified' ? '该订单已核销' : '订单当前不可核销');
@@ -268,6 +304,7 @@ function createCommerceService({ repository, providers, common, clock = () => Da
   }
 
   async function redeemCoupon(admin, code, payload = {}) {
+    validateOptionalLocation(payload);
     const instance = await repository.findOne('user_coupons', { verify_code: String(code || '') });
     assert(instance && instance.status === 'unused' && !isPast(instance.expires_at, clock()), 404, 'COUPON_CODE_INVALID', '券码不存在、已使用或已过期');
     const coupon = await repository.get('coupons', instance.coupon_id);
@@ -409,15 +446,23 @@ function createCommerceService({ repository, providers, common, clock = () => Da
   async function processInviteFirstOrder(userId, orderId) {
     const invite = await repository.findOne('invites', { invitee_id: userId, status: 'registered' });
     if (!invite) return;
+    const user = await repository.get('users', userId);
+    const isNewUser = user && timestamp(user.created_at) + 7 * 86400000 >= clock();
     const firstOrders = (await repository.find('invites', { inviter_id: invite.inviter_id })).filter(item => ['first_order', 'rewarded'].includes(item.status)).length + 1;
     const setting = await repository.findOne('system_settings', { setting_key: 'invite_rewards' });
     const tiers = setting ? setting.value.tiers || [] : [];
-    const eligible = tiers.filter(tier => firstOrders >= Number(tier.firstOrders)).sort((a, b) => Number(b.firstOrders) - Number(a.firstOrders))[0];
+    const eligible = isNewUser && invite.source !== 'merchant'
+      ? tiers.filter(tier => firstOrders >= Number(tier.firstOrders)).sort((a, b) => Number(b.firstOrders) - Number(a.firstOrders))[0]
+      : null;
     await repository.update('invites', invite.id, {
       status: 'first_order', first_order_at: common.now(), reward_status: eligible ? 'pending' : 'none', reward_value: eligible ? Number(eligible.reward) : 0
     });
-    await common.awardGrowth(invite.inviter_id, 'invite_first_order', '邀请用户完成首单', 'order', orderId);
-    await common.notify(invite.inviter_id, 'invite', '邀请用户完成首单', eligible ? `阶梯奖励 ¥${eligible.reward} 待运营发放` : '邀请记录已更新', { inviteId: invite.id });
+    if (isNewUser) await common.awardGrowth(invite.inviter_id, 'invite_first_order', '邀请用户完成首单', 'order', orderId);
+    await common.notify(
+      invite.inviter_id, 'invite', '邀请用户完成首单',
+      eligible ? `阶梯奖励 ¥${eligible.reward} 待运营发放` : isNewUser ? '邀请记录已更新' : '首单已超过新用户7天认定期，不计入奖励',
+      { inviteId: invite.id }
+    );
   }
 
   async function validateCoupon(userId, instanceId, product, amount) {
@@ -460,7 +505,7 @@ function createCommerceService({ repository, providers, common, clock = () => Da
 
   return {
     listProducts, productDetail, merchantDetail, createSession, sessionDetail, createOrder, retryPayment,
-    applyPaymentNotification, listOrders, orderDetail, requestRefund, reviewRefund,
+    applyPaymentNotification, listOrders, orderDetail, requestRefund, reviewRefund, retryRefund,
     applyRefundNotification, verifyOrder, redeemCoupon, expireSessions, closeExpiredOrders,
     interveneSession, tierPrice
   };
@@ -487,12 +532,17 @@ function couponDiscount(coupon, amount) {
   return Math.min(Number(amount), Number(coupon.amount || 0));
 }
 
+function validateOptionalLocation(payload) {
+  const absent = payload.lng == null && payload.lat == null;
+  assert(absent || validCoordinate(payload), 400, 'LOCATION_INVALID', '核销位置坐标不正确');
+}
+
 function money(value) {
   return Math.round((Number(value) + Number.EPSILON) * 100) / 100;
 }
 
 function orderNumber(now) {
-  const day = new Date(now).toISOString().slice(0, 10).replace(/-/g, '');
+  const day = dateKey(now).replace(/-/g, '');
   return `TD${day}${crypto.randomInt(10000000, 100000000)}`;
 }
 

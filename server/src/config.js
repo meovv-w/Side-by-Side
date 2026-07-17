@@ -36,7 +36,13 @@ function loadConfig(overrides = {}) {
     amap: {
       webKey: env.AMAP_WEB_KEY || '',
       jsKey: env.AMAP_JS_KEY || '',
-      securityCode: env.AMAP_SECURITY_CODE || ''
+      securityCode: env.AMAP_SECURITY_CODE || '',
+      trafficEventUrl: env.AMAP_TRAFFIC_EVENT_URL || 'https://et-api.amap.com/event/queryByAdcode',
+      trafficClientKey: env.AMAP_TRAFFIC_CLIENT_KEY || '',
+      trafficSignerUrl: env.AMAP_TRAFFIC_SIGNER_URL || '',
+      trafficSignerToken: env.AMAP_TRAFFIC_SIGNER_TOKEN || '',
+      trafficEventTypes: env.AMAP_TRAFFIC_EVENT_TYPES || '',
+      trafficExpressway: env.AMAP_TRAFFIC_EXPRESSWAY || ''
     },
     tencent: {
       secretId: env.TENCENT_SECRET_ID || '',
@@ -79,6 +85,8 @@ function loadConfig(overrides = {}) {
         ['WECHAT_MCH_PRIVATE_KEY_PATH', config.wechat.privateKeyPath], ['WECHAT_PLATFORM_CERT_PATH', config.wechat.platformCertPath],
         ['WECHAT_API_V3_KEY', config.wechat.apiV3Key], ['WECHAT_NOTIFY_URL', config.wechat.notifyUrl],
         ['AMAP_WEB_KEY', config.amap.webKey], ['AMAP_JS_KEY', config.amap.jsKey], ['AMAP_SECURITY_CODE', config.amap.securityCode],
+        ['AMAP_TRAFFIC_CLIENT_KEY', config.amap.trafficClientKey], ['AMAP_TRAFFIC_SIGNER_URL', config.amap.trafficSignerUrl],
+        ['AMAP_TRAFFIC_SIGNER_TOKEN', config.amap.trafficSignerToken],
         ['TENCENT_SECRET_ID', config.tencent.secretId], ['TENCENT_SECRET_KEY', config.tencent.secretKey],
         ['TENCENT_SMS_APP_ID', config.tencent.smsAppId], ['TENCENT_SMS_SIGN_NAME', config.tencent.smsSignName], ['TENCENT_SMS_TEMPLATE_ID', config.tencent.smsTemplateId],
         ['TENCENT_SMS_EMERGENCY_TEMPLATE_ID', config.tencent.smsEmergencyTemplateId],
